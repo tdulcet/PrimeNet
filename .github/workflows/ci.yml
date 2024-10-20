@@ -1,0 +1,117 @@
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 0 1 * *'
+
+env:
+  PIP_BREAK_SYSTEM_PACKAGES: 1
+
+jobs:
+  Pylint:
+    name: Pylint
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install pylint
+    - name: Script
+      run: pylint -f github --py-version 2.6 -d design,C0103,W0311,C0301,C0302,C0209,R1702 --load-plugins pylint.extensions.code_style,pylint.extensions.comparison_placement,pylint.extensions.for_any_all,pylint.extensions.consider_refactoring_into_while_condition,pylint.extensions.consider_ternary_expression,pylint.extensions.dict_init_mutate,pylint.extensions.docstyle,pylint.extensions.check_elif,pylint.extensions.set_membership,pylint.extensions.typing -e R6104,C1804,C1805 -r y *.py
+      continue-on-error: true
+
+  Ruff:
+    name: Ruff
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install ruff
+    - name: Script
+      run: ruff check --output-format=github .
+      continue-on-error: true
+
+  Linux:
+    name: AutoPrimeNet Linux
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install requests
+    - name: Script
+      run: |
+        set -x
+        wget -qO - https://raw.github.com/tdulcet/Linux-System-Information/master/info.sh | bash -s --
+        python3 -X dev -c 'import platform; print(platform.freedesktop_os_release())' || true
+        python3 -X dev autoprimenet.py --help
+
+  macOS:
+    name: AutoPrimeNet macOS
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, macos-latest]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install requests
+    - name: Script
+      run: |
+        set -x
+        sysctl -n machdep.cpu.brand_string
+        sysctl -n hw.physicalcpu_max hw.logicalcpu_max
+        sysctl -n hw.cpufrequency hw.cpufrequency_max hw.tbfrequency kern.clockrate
+        sysctl -n hw.memsize
+        sysctl -n hw.l1dcachesize hw.l2cachesize hw.l3cachesize
+        python3 -X dev -c 'import platform; print(platform.mac_ver())'
+        python3 -X dev autoprimenet.py --help
+
+  Windows:
+    name: AutoPrimeNet Windows
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-2019, windows-latest]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install requests
+    - name: Script
+      run: |
+        wmic cpu get name
+        Get-CimInstance Win32_Processor | Select Name
+        wmic cpu get NumberOfCores,NumberOfLogicalProcessors
+        Get-CimInstance Win32_Processor | Select NumberOfCores,NumberOfLogicalProcessors
+        wmic cpu get MaxClockSpeed
+        Get-CimInstance Win32_Processor | Select MaxClockSpeed
+        wmic memphysical get MaxCapacity
+        Get-CimInstance Win32_PhysicalMemoryArray | Select MaxCapacity
+        wmic ComputerSystem get TotalPhysicalMemory
+        Get-CimInstance Win32_ComputerSystem | Select TotalPhysicalMemory
+        wmic cpu get L2CacheSize,L3CacheSize
+        Get-CimInstance Win32_Processor | Select L2CacheSize,L3CacheSize
+        wmic path Win32_CacheMemory get CacheType,InstalledSize,Level
+        Get-CimInstance Win32_CacheMemory | Select CacheType,InstalledSize,Level
+        python -X dev -c "import platform; print(platform.win32_ver())"
+        python -X dev autoprimenet.py --help
