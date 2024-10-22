@@ -5042,7 +5042,10 @@ def submit_mersenne_ca_results(adapter, lines, retry_count=0):
 		if results["unknown"]:
 			adapter.error("Unknown {0:n} result{1}.".format(results["unknown"], "s" if results["unknown"] != 1 else ""))
 		if results["rejected"]:
-			adapter.error("Rejected {0:n} result{1}.".format(results["rejected"], "s" if results["rejected"] != 1 else ""))
+			adapter.error("Rejected {0:n} result{1}: {2}".format(
+				results["rejected"], "s" if results["rejected"] != 1 else "",
+				", ".join(("{} ({} result{})".format(
+					reason, len(lines), "s" if len(lines) != 1 else "") for reason, lines in result["lines"]["rejected"].items()))))
 		accepted = sum(results["accepted"].values())
 		adapter.info("Accepted {0:n} result{1}.".format(accepted, "s" if accepted != 1 else ""))
 		factors = results["factors"]
@@ -5092,6 +5095,10 @@ def parse_result(adapter, adir, resultsfile, sendline):
 		},
 		"os": get_os(),
 	}
+	if "user" not in ar:
+		ar["user"] = options.user_id
+	if "computer" not in ar:
+		ar["computer"] = options.computer_id
 	message = json.dumps(ar, ensure_ascii=False)
 
 	assignment = Assignment()
