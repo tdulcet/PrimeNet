@@ -5042,10 +5042,16 @@ def submit_mersenne_ca_results(adapter, lines, retry_count=0):
 		if results["unknown"]:
 			adapter.error("Unknown {0:n} result{1}.".format(results["unknown"], "s" if results["unknown"] != 1 else ""))
 		if results["rejected"]:
-			adapter.error("Rejected {0:n} result{1}: {2}".format(
-				results["rejected"], "s" if results["rejected"] != 1 else "",
-				", ".join(("{} ({} result{})".format(
-					reason, len(lines), "s" if len(lines) != 1 else "") for reason, lines in result["lines"]["rejected"].items()))))
+			adapter.error(
+				"Rejected {0:n} result{1}: {2}".format(
+					results["rejected"],
+					"s" if results["rejected"] != 1 else "",
+					", ".join(
+						"{0} ({1:n} result{2})".format(reason, len(lines), "s" if len(lines) != 1 else "")
+						for reason, lines in result["lines"]["rejected"].items()
+					),
+				)
+			)
 		accepted = sum(results["accepted"].values())
 		adapter.info("Accepted {0:n} result{1}.".format(accepted, "s" if accepted != 1 else ""))
 		factors = results["factors"]
@@ -5085,6 +5091,10 @@ def parse_result(adapter, adir, resultsfile, sendline):
 	# adapter.debug("Program: {0}".format(aprogram))
 	config.set(SEC.Internals, "program", aprogram)
 
+	if "user" not in ar:
+		ar["user"] = options.user_id
+	if "computer" not in ar:
+		ar["computer"] = options.computer_id
 	ar["script"] = {
 		"name": "AutoPrimeNet",  # os.path.basename(sys.argv[0])
 		"version": VERSION,
@@ -5095,10 +5105,6 @@ def parse_result(adapter, adir, resultsfile, sendline):
 		},
 		"os": get_os(),
 	}
-	if "user" not in ar:
-		ar["user"] = options.user_id
-	if "computer" not in ar:
-		ar["computer"] = options.computer_id
 	message = json.dumps(ar, ensure_ascii=False)
 
 	assignment = Assignment()
@@ -5132,8 +5138,8 @@ def parse_result(adapter, adir, resultsfile, sendline):
 		adapter.error("Unsupported worktype {0}".format(worktype))
 		return None
 
-	user = ar.get("user", options.user_id)
-	computer = ar.get("computer", options.computer_id)
+	user = ar["user"]
+	computer = ar["computer"]
 	buf = "" if not user else "UID: {0}, ".format(user) if not computer else "UID: {0}/{1}, ".format(user, computer)
 	if result_type in {PRIMENET.AR_LL_RESULT, PRIMENET.AR_LL_PRIME}:
 		if result_type == PRIMENET.AR_LL_RESULT:
