@@ -9,7 +9,116 @@ Automatically gets and registers assignments, reports assignment progress and re
 
 Adapted from the PrimeNet Python script from [Mlucas](https://www.mersenneforum.org/mayer/README.html#download2) by [Loïc Le Loarer](https://github.com/llloic11/primenet) and Ernst W. Mayer, which itself was adapted from primetools by [Mark Rose](https://github.com/MarkRose/primetools) and [teknohog](https://github.com/teknohog/primetools).
 
+AutoPrimeNet (the PrimeNet program) was moved from the [Distributed Computing Scripts](https://github.com/tdulcet/Distributed-Computing-Scripts#primenet) repository.
+
 ❤️ Please visit [tealdulcet.com](https://www.tealdulcet.com/) to support this program and my other software development.
+
+## Features
+
+* Interactive setup with a `--setup` option
+* Command line interface and configuration file
+* Automatically registers the instance with PrimeNet
+* PrimeNet/mersenne.org
+	* Supports all applicable [PrimeNet v5 API](http://v5.mersenne.org/v5design/v5webAPI_0.97.html) functionality
+		* Registers and updates instance
+		* Gets and sets program options
+		* Gets and recovers assignments
+		* Registers assignments
+		* Unreserve assignments
+		* Reports assignment progress
+		* Reports assignment results
+		* Ping server
+	* Uploads PRP proof files
+	* Downloads PRP certification starting values
+* mersenne.ca for exponents above PrimeNet limit of 1G (1,000,000,000)
+	* Supports all available functionality
+		* Gets and recovers assignments
+		* Unreserve assignments
+		* Reports assignment results
+* Supported GIMPS software
+	* Full support
+		* Mlucas
+		* GpuOwl
+		* CUDALucas
+		* mfaktc
+		* mfakto
+	* Partial support
+		* PRPLL
+		* CUDAPm1
+	* Report results only
+		* Prime95/MPrime
+		* cofact
+* Supported worktypes
+	* LL
+	* PRP
+	* PRP cofactor
+	* Trial Factor (TF)
+	* P-1 factor
+	* PRP Certification (CERT)
+* Supports multiple workers (CPU Cores or GPUs)
+	* Supports setting per worker options, including work preferences
+* Can be used anonymously
+* Automatically reports assignment progress
+	* Monitor progress on [CPUs page](https://www.mersenne.org/cpus/)
+	* Allows getting much smaller [Category 0 and 1 exponents](https://www.mersenne.org/thresholds/)
+	* Supports using the save/checkpoint files to determine progress
+* Can specify minimum and maximum exponent for assignments
+	* Can specify minimum and maximum bit level for assignments from mersenne.ca
+* Automatically registers assignments without an assignment ID (AID)
+	* Interactively register specific exponents with a `--register-exponents` option
+		* Automatically gets existing parameters from mersenne.ca
+	* Supports a `worktodo.add` file
+* Supports recovering all assignments
+* Supports unreserving specific exponents or all assignments
+* Supports automatically updating assignments
+	* Force P-1 factoring before LL/PRP tests
+	* Use the optimal P-1 bounds
+	* Convert LL assignments to PRP
+	* Convert PRP assignments to LL
+* Calculates rolling average to improve assignment expected completion dates
+* Stop getting new assignments with a `--no-more-work` option
+	* Resume getting assignments with a `--resume-work` option
+* Logging to both console and a file
+	* Optional color output
+	* Automatically rotates log file
+* Monitors available and used disk space
+* Optional e-mail and text message notifications
+	* There is an error
+		* Failed to get new assignments
+		* Failed to report assignment results
+		* Failed to upload a proof file
+	* GIMPS program has stalled
+		* GIMPS program has stalled (not made any progress)
+		* GIMPS program has resumed after previously stalling
+	* Disk space is low
+		* Disk space used is greater than % of configured limit
+		* Disk space available is less than % of total
+	* GIMPS program found a new Mersenne Prime!
+* File locking of both work and results files
+* Optionally archives PRP proof files after upload
+* Saves submitted results to a `results_sent.txt` file
+* Automatically detects system information
+	* Processor (CPU)
+		* CPU model
+		* Frequency/Speed
+		* Total memory
+		* Number of cores/threads
+		* L1/L2/L3 cache sizes
+	* Graphics Processor (GPU) with Nvidia Management Library (NVML) and OpenCL
+		* GPU model
+		* Frequency/Speed
+		* Total memory
+* Optional status report 
+	* Expected completion dates for all assignments
+	* Probability each assignment is prime
+	* Outputs number of and first/last 20 decimal digits
+* Verifies each found factor divides number
+	* Outputs number of decimal digits and bits
+* Optional alert after finding a new Mersenne Prime!
+* Supports both Python 2 and 3 
+* Supports Windows, macOS and Linux
+* 100% Open Source
+* Can claim full EFF Awards
 
 ## Usage
 

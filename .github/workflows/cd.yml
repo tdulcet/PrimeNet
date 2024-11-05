@@ -13,7 +13,7 @@ on:
 
 jobs:
   PyInstaller:
-    name: AutoPrimeNet Windows PyInstaller
+    name: Windows PyInstaller
 
     runs-on: windows-latest
     strategy:
@@ -46,7 +46,7 @@ jobs:
           dist/*
 
   deploy:
-    name: AutoPrimeNet Windows Deploy
+    name: Windows Deploy
     needs: PyInstaller
 
     runs-on: ubuntu-latest

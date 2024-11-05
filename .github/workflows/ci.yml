@@ -38,7 +38,7 @@ jobs:
       continue-on-error: true
 
   Linux:
-    name: AutoPrimeNet Linux
+    name: Linux
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -57,9 +57,10 @@ jobs:
         wget -qO - https://raw.github.com/tdulcet/Linux-System-Information/master/info.sh | bash -s --
         python3 -X dev -c 'import platform; print(platform.freedesktop_os_release())' || true
         python3 -X dev autoprimenet.py --help
+        python3 -X dev gimps_status.py --help
 
   macOS:
-    name: AutoPrimeNet macOS
+    name: macOS
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -82,9 +83,10 @@ jobs:
         sysctl -n hw.l1dcachesize hw.l2cachesize hw.l3cachesize
         python3 -X dev -c 'import platform; print(platform.mac_ver())'
         python3 -X dev autoprimenet.py --help
+        python3 -X dev gimps_status.py --help
 
   Windows:
-    name: AutoPrimeNet Windows
+    name: Windows
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -115,3 +117,4 @@ jobs:
         Get-CimInstance Win32_CacheMemory | Select CacheType,InstalledSize,Level
         python -X dev -c "import platform; print(platform.win32_ver())"
         python -X dev autoprimenet.py --help
+        python -X dev gimps_status.py --help
