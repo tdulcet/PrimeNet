@@ -85,6 +85,7 @@ AutoPrimeNet (the PrimeNet program) was moved from the [Distributed Computing Sc
 * Optional e-mail and text message notifications
 	* There is an error
 		* Failed to get new assignments
+		* Assignment results were rejected
 		* Failed to report assignment results
 		* Failed to upload a proof file
 	* GIMPS program has stalled
@@ -146,8 +147,8 @@ Options:
   -d, --debug           Output detailed information. Provide multiple times
                         for even more verbose output.
   -w WORKDIR, --workdir=WORKDIR
-                        Working directory with the local file from this
-                        program, Default: . (current directory)
+                        Working directory with the configuration file from
+                        this program, Default: . (current directory)
   -D DIRS, --dir=DIRS   Directories relative to --workdir with the work and
                         results files from the GIMPS program. Provide once for
                         each worker. It automatically sets the --cpu-num
@@ -169,8 +170,8 @@ Options:
                         GIMPS/PrimeNet User ID. Create a GIMPS/PrimeNet
                         account: https://www.mersenne.org/update/. If you do
                         not want a PrimeNet account, you can use ANONYMOUS.
-  -T WORK_PREFERENCE, --worktype=WORK_PREFERENCE
-                        Type of work, Default: 150. Supported work
+  -T WORK_PREFERENCE, --workpref=WORK_PREFERENCE
+                        Work preference, Default: 150. Supported work
                         preferences: 2 (Trial factoring), 4 (P-1 factoring),
                         12 (Trial factoring GPU), 100 (First time LL tests),
                         101 (Double-check LL tests), 102 (World record LL
@@ -183,10 +184,10 @@ Options:
                         156 (Double-check using PRP with proof and nonzero
                         shift count), 160 (First time PRP on Mersenne
                         cofactors), 161 (Double-check PRP on Mersenne
-                        cofactors). Provide once to use the same worktype for
-                        all workers or once for each worker to use different
-                        worktypes. Not all worktypes are supported by all the
-                        GIMPS programs.
+                        cofactors). Provide once to use the same work
+                        preference for all workers or once for each worker to
+                        use different work preferences. Not all worktypes are
+                        supported by all the GIMPS programs.
   --cert-work           Get PRP proof certification work, Default: none. Not
                         yet supported by any of the GIMPS programs.
   --cert-work-limit=CERT_CPU_LIMIT
@@ -198,8 +199,8 @@ Options:
                         setting this flag to 1,000,000,000 or above.
   --max-exp=MAX_EXP     Maximum exponent to get from PrimeNet or TF1G (2 -
                         9,999,999,999)
-  --bit-min=BIT_MIN     Minimum bit level of TF1G assignments to fetch
-  --bit-max=BIT_MAX     Maximum bit level of TF1G assignments to fetch
+  --min-bit=MIN_BIT     Minimum bit level of TF1G assignments to fetch
+  --max-bit=MAX_BIT     Maximum bit level of TF1G assignments to fetch
   -m, --mlucas          Get assignments for Mlucas.
   -g, --gpuowl          Get assignments for GpuOwl. PRPLL is not yet fully
                         supported.
@@ -239,7 +240,7 @@ Options:
                         when registering assignments.
   --convert-prp-to-ll   Convert all PRP assignments to LL. This is
                         automatically enabled for first time PRP assignments
-                        when the --worktype option is for a first time LL
+                        when the --workpref option is for a first time LL
                         worktype.
   --no-report-100m      Do not report any prime results for exponents greater
                         than or equal to 100 million digits. You must setup
