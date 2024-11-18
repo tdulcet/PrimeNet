@@ -19,6 +19,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
+        python-version: ["3.8", "3.x"]
         architecture: ["x86", "x64"]
       fail-fast: false
     steps:
@@ -26,7 +27,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.x"
+        python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.architecture }}
     - name: Install dependencies
       run: |
@@ -40,7 +41,7 @@ jobs:
         .\dist\autoprimenet --help
     - uses: actions/upload-artifact@v4
       with:
-        name: AutoPrimeNet_Windows_${{ matrix.architecture }}
+        name: AutoPrimeNet_Windows${{ matrix.python-version == '3.8' && '-Vista-7-8' || '' }}_${{ matrix.architecture }}
         path: |
           README.md
           LICENSE
@@ -60,7 +61,7 @@ jobs:
     - name: Script
       run: |
         set -x
-        ls -alR AutoPrimeNet_Windows_*
-        for DIR in AutoPrimeNet_Windows_*/; do (cd "$DIR"; zip -j "../${DIR%/}" -- README.md LICENSE dist/*); done
-        ls -alR AutoPrimeNet_Windows_*
-        lftp -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" -e "set ssl:verify-certificate false; mput AutoPrimeNet_Windows_*.zip; exit" download.mersenne.ca
+        ls -alR AutoPrimeNet_Windows*
+        for DIR in AutoPrimeNet_Windows*/; do (cd "$DIR"; zip -j "../${DIR%/}" -- README.md LICENSE dist/*); done
+        ls -alR AutoPrimeNet_Windows*
+        lftp -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" -e "set ssl:verify-certificate false; mput AutoPrimeNet_Windows*.zip; exit" download.mersenne.ca
