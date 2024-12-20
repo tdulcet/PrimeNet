@@ -138,6 +138,7 @@ try:
 except ImportError:
 
 	def median_low(data):
+		"""Returns the median of the input data, using the lower median for even-length data."""
 		sorts = sorted(data)
 		length = len(sorts)
 		return sorts[(length - 1) // 2]
@@ -149,6 +150,7 @@ try:
 except ImportError:
 
 	def isqrt(n):
+		"""Compute the integer square root of a nonnegative integer."""
 		# return int(math.sqrt(x))
 		if n < 0:
 			msg = "isqrt() argument must be nonnegative"
@@ -174,6 +176,7 @@ try:
 except ImportError:
 
 	def log2(x):
+		"""Calculate the base-2 logarithm of a given number."""
 		return math.log(x, 2)
 
 
@@ -183,6 +186,7 @@ try:
 except ImportError:
 
 	def expm1(x):
+		"""Return exp(x) - 1, the exponential of x minus 1."""
 		return math.exp(x) - 1
 
 
@@ -475,7 +479,7 @@ except ImportError:
 else:
 
 	def beep():
-		"""Emits a beep sound."""
+		"""Plays a default system notification sound."""
 		winsound.MessageBeep(type=-1)
 
 
@@ -581,7 +585,10 @@ MODULUS_TYPE_FERMAT = 3
 
 
 class timedelta(timedelta):
+	"""Custom timedelta class with a formatted string representation."""
+
 	def __str__(self):
+		"""Return a formatted string representation of the timedelta."""
 		m, s = divmod(self.seconds, 60)
 		h, m = divmod(m, 60)
 		d = self.days
@@ -595,12 +602,17 @@ class timedelta(timedelta):
 
 
 class Formatter(logging.Formatter):
+	"""Custom logging formatter to include worker information if available."""
+
 	def format(self, record):
+		"""Format log record to include worker number if 'cpu_num' attribute is present."""
 		record.worker = ", Worker #{0:n}".format(record.cpu_num + 1) if hasattr(record, "cpu_num") else ""
 		return super(Formatter, self).format(record)
 
 
 class COLORS:
+	"""ANSI escape sequences for terminal text colors."""
+
 	RED = "\033[31m"
 	GREEN = "\033[32m"
 	YELLOW = "\033[33m"
@@ -618,6 +630,8 @@ RESET_All = "\033[m"
 
 
 class ColorFormatter(Formatter):
+	"""Custom log formatter to add color based on log level."""
+
 	FORMATS = {
 		logging.DEBUG: COLORS.GRAY,
 		# logging.INFO: COLORS.GREEN,
@@ -627,6 +641,7 @@ class ColorFormatter(Formatter):
 	}
 
 	def format(self, record):
+		"""Format log record with color based on log level."""
 		fmt = super(ColorFormatter, self).format(record)
 		color = self.FORMATS.get(record.levelno)
 		if COLOR and color:
@@ -635,13 +650,17 @@ class ColorFormatter(Formatter):
 
 
 class LockFile:
+	"""Context manager for creating and managing a lock file."""
+
 	__slots__ = ("filename", "lockfile")
 
 	def __init__(self, filename):
+		"""Initialize with the name of the file to lock."""
 		self.filename = filename
 		self.lockfile = filename + ".lck"
 
 	def __enter__(self):
+		"""Acquire the lock by creating the lock file."""
 		for i in count():
 			try:
 				# Python 3.3+: with open(self.lockfile, "x") as f:
@@ -662,6 +681,7 @@ class LockFile:
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
+		"""Release the lock by removing the lock file."""
 		os.remove(self.lockfile)
 
 
@@ -849,7 +869,7 @@ if hasattr(__builtins__, "xrange"):
 
 
 def exponent_to_str(assignment):
-	"""Converts a PrimeNet assignment to a string representation."""
+	"""Converts an assignment's exponent to a formatted string representation."""
 	if not assignment.n:
 		buf = "{0:.0f}".format(assignment.k + assignment.c)
 	elif assignment.k != 1.0:
@@ -872,6 +892,7 @@ def exponent_to_str(assignment):
 
 
 def exponent_to_text(assignment):
+	"""Converts an assignment's work type and exponent to a descriptive text string."""
 	if assignment.work_type == PRIMENET.WORK_TYPE_FIRST_LL:
 		work_type_str = "LL"
 	elif assignment.work_type == PRIMENET.WORK_TYPE_DBLCHK:
@@ -888,7 +909,7 @@ def exponent_to_text(assignment):
 
 
 def assignment_to_str(assignment):
-	"""Converts a work unit assignment to a human-readable string."""
+	"""Converts an assignment object to its string representation, including known factors if present."""
 	buf = exponent_to_str(assignment)
 	if not assignment.known_factors:
 		return buf
@@ -896,6 +917,7 @@ def assignment_to_str(assignment):
 
 
 def outputunit(number, scale=False):
+	"""Converts a number to a human-readable string with appropriate scaling and suffix."""
 	scale_base = 1000 if scale else 1024
 
 	power = 0
@@ -926,6 +948,7 @@ def outputunit(number, scale=False):
 
 
 def inputunit(astr, scale=False):
+	"""Converts a string with a unit suffix to an integer value."""
 	scale_base = 1000 if scale else 1024
 
 	unit = astr[-1]
@@ -936,6 +959,7 @@ def inputunit(astr, scale=False):
 
 
 def output_available(available, total):
+	"""Formats the available and total byte values into a human-readable string."""
 	return "{0}B / {1}B{2}".format(
 		outputunit(available),
 		outputunit(total),
@@ -944,7 +968,7 @@ def output_available(available, total):
 
 
 def ask_yn(astr, val):
-	"""Prompt the user with a yes/no question and return their response as a boolean value."""
+	"""Prompt the user with a yes/no question and return the response as a boolean."""
 	while True:
 		temp = input("{0} ({1}): ".format(astr, "Y" if val else "N")).strip()
 		if not temp:
@@ -956,7 +980,7 @@ def ask_yn(astr, val):
 
 
 def ask_int(astr, val, amin=None, amax=None, base=0):
-	"""Prompt the user for an integer input, ensuring the response is within a specified range."""
+	"""Prompt the user for an integer input with optional default value, range, and base."""
 	while True:
 		temp = input("{0}{1}: ".format(astr, " ({0!r})".format(val) if val is not None else ""))
 		if not temp:
@@ -977,7 +1001,7 @@ def ask_int(astr, val, amin=None, amax=None, base=0):
 
 
 def ask_float(astr, val, amin=None, amax=None):
-	"""Prompt the user for a floating-point number input, ensuring the response is within a specified range."""
+	"""Prompt the user for a float input with optional default value and range."""
 	while True:
 		temp = input("{0}{1}: ".format(astr, " ({0!r})".format(val) if val is not None else ""))
 		if not temp:
@@ -998,7 +1022,7 @@ def ask_float(astr, val, amin=None, amax=None):
 
 
 def ask_str(astr, val, maxlen=0):
-	"""Prompts for and returns a string input from the user."""
+	"""Prompt the user for a string input with optional default value and maximum length."""
 	while True:
 		temp = input("{0}{1}: ".format(astr, " ({0!r})".format(val) if val else "")).strip()
 		if not temp:
@@ -1010,21 +1034,22 @@ def ask_str(astr, val, maxlen=0):
 
 
 def ask_pass(astr, val):
-	"""Prompt for a password input from the user, hiding their input for security."""
+	"""Prompt the user for a password, displaying asterisks for existing input if provided."""
 	return getpass.getpass("{0}{1}: ".format(astr, " ({0})".format("*" * len(val)) if val else "")) or val
 
 
 def ask_ok():
-	"""Displays a message and waits for the user to acknowledge it."""
+	"""Prompts the user to hit Enter to continue."""
 	input("\nHit Enter to continue: ")
 
 
 def ask_ok_cancel():
-	"""Displays a message and returns the user's choice as a boolean."""
+	"""Prompt the user with a yes/no question to accept the answers above."""
 	return ask_yn("\nAccept the answers above?", True)
 
 
 def get_device_str(device, name):
+	"""Retrieve the specified information string from an OpenCL device."""
 	size = ctypes.c_size_t()
 	cl.clGetDeviceInfo(device, name, ctypes.c_size_t(0), None, ctypes.byref(size))
 
@@ -1034,6 +1059,7 @@ def get_device_str(device, name):
 
 
 def get_device_value(device, name, ctype):
+	"""Retrieve the specified information value from an OpenCL device."""
 	size = ctypes.sizeof(ctype)
 	value = ctype()
 	cl.clGetDeviceInfo(device, name, size, ctypes.byref(value), None)
@@ -1041,6 +1067,7 @@ def get_device_value(device, name, ctype):
 
 
 def get_opencl_devices():
+	"""Retrieves a list of available OpenCL devices with their names, maximum clock frequencies, and global memory sizes."""
 	num_platforms = ctypes.c_uint()
 	result = cl.clGetPlatformIDs(0, None, ctypes.byref(num_platforms))
 	if result and result != -1001:  # CL_PLATFORM_NOT_FOUND_KHR
@@ -1085,6 +1112,7 @@ def get_opencl_devices():
 
 
 def get_nvidia_devices():
+	"""Retrieve a list of Nvidia GPU devices with their names, maximum clock frequencies, and total memory."""
 	if nvml.nvmlInit():
 		logging.error("Failed to initialize NVML")
 		return []
@@ -1124,6 +1152,7 @@ def get_nvidia_devices():
 
 
 def get_gpus():
+	"""Retrieve a list of available GPU devices from OpenCL and Nvidia libraries."""
 	gpus = []
 
 	if cl_lib:
@@ -1142,7 +1171,7 @@ def get_gpus():
 
 
 def setup():
-	"""Sets up the configuration for the application."""
+	"""Configures the GIMPS/PrimeNet client with user preferences and system settings."""
 	wrapper = textwrap.TextWrapper(width=75)
 	print(
 		wrapper.fill(
@@ -1458,7 +1487,7 @@ def setup():
 
 
 def readonly_list_file(filename, mode="r"):
-	"""Reads a file line by line into a list."""
+	"""Yields lines from a file as strings."""
 	# Used when there is no intention to write the file back, so don't
 	# check or write lockfiles. Also returns a single string, no list.
 	try:
@@ -1546,7 +1575,7 @@ OPTIONS_TYPE_HINTS = {
 
 
 def config_read():
-	"""Reads and parses the configuration settings from a file."""
+	"""Reads and returns the configuration from the local file, ensuring required sections exist."""
 	config = ConfigParser()
 	config.optionxform = lambda option: option
 	localfile = os.path.join(workdir, options.localfile)
@@ -1562,7 +1591,7 @@ def config_read():
 
 
 def config_write(config, guid=None):
-	"""Writes the configuration settings to a file."""
+	"""Writes the configuration to a prime.ini file, optionally updating the ComputerGUID."""
 	# generate a new prime.ini file
 	if guid is not None:  # update the guid if necessary
 		config.set(SEC.PrimeNet, "ComputerGUID", guid)
@@ -1572,19 +1601,19 @@ def config_write(config, guid=None):
 
 
 def get_guid(config):
-	"""Returns the GUID from the config file, or None if it is not present."""
+	"""Retrieve the ComputerGUID from the configuration if it exists."""
 	if config.has_option(SEC.PrimeNet, "ComputerGUID"):
 		return config.get(SEC.PrimeNet, "ComputerGUID")
 	return None
 
 
 def create_new_guid():
-	"""Returns a new globally unique identifier (GUID)."""
+	"""Generate a new GUID (Globally Unique Identifier) as a hexadecimal string."""
 	return uuid.uuid4().hex
 
 
 def merge_config_and_options(config, options):
-	"""Merges command-line options with configuration file settings."""
+	"""Synchronizes options with config, updating config if necessary."""
 	# getattr and setattr allow access to the options.xxxx values by name
 	# which allow to copy all of them programmatically instead of having
 	# one line per attribute. Only the attr_to_copy list need to be updated
@@ -1633,7 +1662,7 @@ def merge_config_and_options(config, options):
 
 
 def is_known_mersenne_prime(p):
-	"""Returns if a given number is a known Mersenne prime."""
+	"""Check if a given number is a known Mersenne prime exponent."""
 	mersenne_primes = frozenset((
 		2,
 		3,
@@ -1714,6 +1743,7 @@ PRIME_BASES = (
 
 
 def primes(limit):
+	"""Generate a list of prime numbers up to a given limit."""
 	if not limit & 1:
 		limit -= 1
 	size = (limit - 1) // 2
@@ -1733,6 +1763,7 @@ BASES = PRIMES[: PRIME_BASES[-1][0]]
 
 
 def miller_rabin(n, nm1, a, d, s):
+	"""Performs the Miller-Rabin primality test for a given base 'a'."""
 	x = pow(a, d, n)
 
 	if x in {1, nm1}:
@@ -1750,7 +1781,7 @@ def miller_rabin(n, nm1, a, d, s):
 
 
 def is_prime(n):
-	"""Returns if a given number is prime."""
+	"""Check if a number is prime using trial division and the Miller-Rabin primality test."""
 	if n < 2:
 		return False
 	for p in BASES:
@@ -1780,7 +1811,7 @@ if sys.version_info >= (3, 3):
 	import decimal
 
 	def digits(assignment):
-		"""Returns the number of digits in the decimal representation of n."""
+		"""Calculate the number of decimal digits in the given assignment."""
 		# Maximum exponent on 32-bit systems: 1,411,819,440 (425,000,000 digits)
 		exponent = exponent_to_str(assignment)
 		adigits = int(Decimal(assignment.k).log10() + assignment.n * Decimal(assignment.b).log10()) + 1
@@ -1810,7 +1841,7 @@ if sys.version_info >= (3, 3):
 else:
 
 	def digits(assignment):
-		"""Returns the number of digits in the decimal representation of n."""
+		"""Calculate the number of decimal digits in the given assignment."""
 		adigits = int(Decimal(assignment.k).log10() + assignment.n * Decimal(assignment.b).log10()) + 1
 		logging.info(
 			"The exponent {0} has approximately {1:n} decimal digits (using formula log10({2.k}) + {2.n} * log10({2.b}) + 1)".format(
@@ -1843,7 +1874,7 @@ Cert_RE = re.compile(
 
 
 def parse_assignment(task):
-	"""Parse a line from the workfile into an Assignment."""
+	"""Parses an assignment string and returns an Assignment object with the extracted details."""
 	# Ex: Test=197ED240A7A41EC575CB408F32DDA661,57600769,74
 	found = WORKPATTERN.match(task)
 	if not found:
@@ -1951,6 +1982,7 @@ def parse_assignment(task):
 
 
 def process_add_file(adapter, adir):
+	"""Processes and appends tasks from an .add file to the work file, then removes the .add file."""
 	workfile = os.path.join(adir, options.worktodo_file)
 	addfile = os.path.splitext(workfile)[0] + ".add"  # ".add.txt"
 	if os.path.exists(addfile):
@@ -1963,7 +1995,7 @@ def process_add_file(adapter, adir):
 
 
 def read_workfile(adapter, adir):
-	"""Reads and parses assignments from the workfile."""
+	"""Reads and validates assignments from a work file, yielding the assignments."""
 	workfile = os.path.join(adir, options.worktodo_file)
 	tasks = readonly_list_file(workfile)
 	for task in tasks:
@@ -1993,7 +2025,7 @@ def read_workfile(adapter, adir):
 
 
 def output_assignment(assignment):
-	"""Outputs an assignment."""
+	"""Generate a formatted string representing the details of a given assignment."""
 	temp = []
 	if assignment.uid:
 		temp.append(assignment.uid)
@@ -2051,7 +2083,7 @@ def output_assignment(assignment):
 
 
 def write_workfile(adir, assignments):
-	"""Writes assignments to the workfile."""
+	"""Writes assignments to a work file in the specified directory."""
 	workfile = os.path.join(adir, options.worktodo_file)
 	tasks = (output_assignment(task) if isinstance(task, Assignment) else task for task in assignments)
 	with tempfile.NamedTemporaryFile("w", dir=adir, delete=False) as f:  # Python 3+: encoding="utf-8"
@@ -2062,7 +2094,7 @@ def write_workfile(adir, assignments):
 
 
 def announce_prime_to_user(exponent, worktype):
-	"""Announce a newly found prime to the user."""
+	"""Announces a prime or probable prime number to the user and prompts to send an email."""
 	color = BOLD + COLORS.RED if COLOR else ""
 	reset = RESET_All if COLOR else ""
 	emails = ", ".join(starmap("{0} <{1}>".format, CCEMAILS))
@@ -2077,7 +2109,7 @@ def announce_prime_to_user(exponent, worktype):
 
 
 def tail(filename, lines=100):
-	"""Retrieves the last few lines from a file."""
+	"""Returns the last 'lines' lines from a file, or an appropriate message if the file is not found or empty."""
 	if not os.path.exists(filename):
 		return "> (File not found)"
 	w = deque(readonly_list_file(filename), lines)
@@ -2087,6 +2119,7 @@ def tail(filename, lines=100):
 
 
 def send(subject, message, attachments=None, to=None, cc=None, bcc=None, priority=None):
+	"""Send an email with optional attachments and specified recipients."""
 	msg_text = MIMEText(message, "plain", "utf-8")
 
 	if attachments:
@@ -2162,6 +2195,7 @@ def send(subject, message, attachments=None, to=None, cc=None, bcc=None, priorit
 
 
 def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, priority=None, azipfile=None):
+	"""Send an email with the specified subject, message, and attachments."""
 	if not options.fromemail or not options.smtp:
 		return False
 	if config.has_option(SEC.Email, "send") and not config.getboolean(SEC.Email, "send"):
@@ -2224,7 +2258,7 @@ def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, 
 
 
 def test_msg(guid):
-	"""Sends a test message."""
+	"""Sends a test email to verify AutoPrimeNet email configuration."""
 	if not send_msg(
 		"👋 Test from AutoPrimeNet",
 		"""Hello {0},
@@ -2257,7 +2291,7 @@ GUID: {7}
 
 
 def generate_application_str():
-	"""Generates and returns a string representing the application details."""
+	"""Generates a formatted application string based on the platform and selected program."""
 	if sys.platform == "darwin":
 		aplatform = "Mac OS X" + (" 64-bit" if is_64bit else "")
 	else:
@@ -2291,6 +2325,7 @@ def generate_application_str():
 
 
 def get_os():
+	"""Retrieve detailed information about the operating system."""
 	result = {}
 	machine = None
 
@@ -2336,7 +2371,7 @@ def get_os():
 
 
 def get_cpu_model():
-	"""Returns the CPU model name of the system."""
+	"""Returns the model name of the CPU."""
 	output = ""
 	if sys.platform == "win32":
 		# wmic cpu get name
@@ -2358,7 +2393,7 @@ def get_cpu_model():
 
 
 def get_cpu_cores_threads():
-	"""Returns the number of CPU cores and threads on the system."""
+	"""Returns the number of physical CPU cores and logical threads available on the system."""
 	# Python 3.4+, but can be overridden in 3.13+
 	# threads = os.cpu_count()
 	# threads = multiprocessing.cpu_count()
@@ -2407,7 +2442,7 @@ def get_cpu_cores_threads():
 
 
 def get_cpu_frequency():
-	"""Returns the CPU frequency in MHz."""
+	"""Retrieve the maximum CPU frequency in MHz for the system."""
 	frequency = 0
 	if sys.platform == "win32":
 		# wmic cpu get MaxClockSpeed
@@ -2432,7 +2467,7 @@ def get_cpu_frequency():
 
 
 def get_physical_memory():
-	"""Returns the total amount of physical memory in the system, in MiB."""
+	"""Returns the total physical memory in MiB of the system."""
 	memory = 0
 	if sys.platform == "win32":
 		# wmic memphysical get MaxCapacity
@@ -2455,6 +2490,7 @@ def get_physical_memory():
 
 
 def get_cpu_cache_sizes():
+	"""Retrieve the sizes of the CPU caches (L1, L2, L3) for the system."""
 	cache_sizes = {1: 0, 2: 0, 3: 0}
 	if sys.platform == "win32":
 		# wmic cpu get L2CacheSize,L3CacheSize
@@ -2515,7 +2551,7 @@ def get_cpu_cache_sizes():
 
 
 def parse_v5_resp(r):
-	"""Parse the v5 response from the server into a dict."""
+	"""Parses a v5 response string into a dictionary of options and values."""
 	ans = {}
 	for line in r.split("\n"):
 		if line == "==END==":
@@ -2529,6 +2565,7 @@ __v5salt_ = 0
 
 
 def secure_v5_url(guid, args):
+	"""Generates a secure v5 URL with a hash based on the provided GUID and arguments."""
 	k = bytearray(md5(guid.encode("utf-8")).digest())
 
 	for i in range(16):
@@ -2551,7 +2588,7 @@ def secure_v5_url(guid, args):
 
 
 def send_request(guid, args):
-	"""Send an HTTP request to the PrimeNet server."""
+	"""Send a request to the PrimeNet server and handle the response."""
 	if guid is not None:
 		if not options.prime95:
 			args["ss"] = 19191919
@@ -2602,6 +2639,7 @@ def send_request(guid, args):
 
 
 def get_exponent(n):
+	"""Fetches and returns the JSON data for a given Mersenne exponent."""
 	try:
 		# r = session.get(primenet_baseurl + "report_exponent_simple/", params={"exp_lo": n, "faclim": 1, "json": 1}, timeout=180)
 		r = session.get(mersenne_ca_baseurl + "exponent/{0}/json".format(n), timeout=180)
@@ -2646,6 +2684,7 @@ FACTOR_LIMITS = (
 
 
 def factor_limit(p):
+	"""Determine the factor limit based on the given exponent."""
 	test = 40
 	for bits, exponent in FACTOR_LIMITS:
 		if p > exponent:
@@ -3048,6 +3087,7 @@ def gain(exponent, factoredTo, B1, B2):
 
 
 def walk(exponent, factoredTo):
+	"""Optimizes B1 and B2 bounds for a given exponent and factoredTo value."""
 	B1 = next_nice_number(exponent // 1000)
 	B2 = next_nice_number(exponent // 100)
 
@@ -3115,19 +3155,20 @@ def walk(exponent, factoredTo):
 if hasattr(int, "from_bytes"):
 
 	def from_bytes(abytes, byteorder="little"):
-		"""Converts a byte sequence to a corresponding value."""
+		"""Convert a byte sequence to an integer using the specified byte order."""
 		return int.from_bytes(abytes, byteorder)
 
 else:
 
 	def from_bytes(abytes, byteorder="little"):
-		"""Converts a byte sequence to a corresponding value."""
+		"""Convert a bytes sequence to an integer with the specified byte order."""
 		if byteorder == "big":
 			abytes = reversed(abytes)
 		return sum(b << i * 8 for i, b in enumerate(bytearray(abytes)))
 
 
 def unpack(aformat, file, noraise=False):
+	"""Unpacks binary data from a file according to the specified format."""
 	size = struct.calcsize(aformat)
 	buffer = file.read(size)
 	if len(buffer) != size:
@@ -3138,6 +3179,7 @@ def unpack(aformat, file, noraise=False):
 
 
 def read_residue_mlucas(file, nbytes):
+	"""Reads and unpacks residue data from a file at a given byte offset."""
 	file.seek(nbytes, 1)  # os.SEEK_CUR
 
 	res64, res35m1, res36m1 = unpack("<Q5s5s", file)
@@ -3420,6 +3462,7 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 
 
 def calculate_k(exp, bits):
+	"""Calculate the value of k based on the given exponent and bit length."""
 	tmp_low = 1 << (bits - 1)
 	tmp_low -= 1
 	k = tmp_low // exp
@@ -3430,6 +3473,7 @@ def calculate_k(exp, bits):
 
 
 def class_needed(exp, k_min, c, more_classes):
+	"""Determines if a class is needed based on given parameters and conditions."""
 	if (
 		(2 * (exp % 8) * ((k_min + c) % 8)) % 8 != 2
 		and ((2 * (exp % 8) * ((k_min + c) % 8)) % 8 != 4)
@@ -3444,6 +3488,7 @@ def class_needed(exp, k_min, c, more_classes):
 
 
 def pct_complete_mfakt(exp, bits, num_classes, cur_class):
+	"""Calculate the percentage of completion for the exponent based on the current class."""
 	# Lines of code with comments below are taken from mfaktc.c
 
 	cur_class += 1  # the checkpoint contains the last complete processed class!
@@ -3468,6 +3513,7 @@ def pct_complete_mfakt(exp, bits, num_classes, cur_class):
 
 
 def tf_ghd_credit(exp, bit_min, bit_max):
+	"""Calculate the GHz-days credit for a given exponent and bit range."""
 	ghzdays = sum(
 		(0.011160 if i <= 62 else 0.017832 if i <= 64 else 0.016968) * 2 ** (i - 48) for i in range(bit_min + 1, bit_max + 1)
 	)
@@ -3550,6 +3596,7 @@ def parse_work_unit_mfakto(filename, p):
 
 
 def get_stages_mfaktx_ini(adapter, adir):
+	"""Retrieve the number of stages from the mfaktc.ini or mfakto.ini configuration file."""
 	stages = 1
 	ini_file = os.path.join(adir, "mfaktc.ini" if options.mfaktc else "mfakto.ini")
 	if not os.path.exists(ini_file):
@@ -3833,7 +3880,7 @@ def parse_mfakto_output_file(adir, p):
 
 
 def get_progress_assignment(adapter, adir, assignment):
-	"""Return the progress of an assignment."""
+	"""Retrieve the progress of an assignment."""
 	if not assignment:
 		return None
 	if options.gpuowl:  # GpuOwl
@@ -3850,7 +3897,7 @@ def get_progress_assignment(adapter, adir, assignment):
 
 
 def compute_progress(assignment, iteration, msec_per_iter, p, bits, s2):
-	"""Computes the progress of a given assignment."""
+	"""Calculate the progress percentage and estimated time left for a given assignment."""
 	percent = iteration / (
 		s2
 		or bits
@@ -3903,6 +3950,7 @@ def compute_progress(assignment, iteration, msec_per_iter, p, bits, s2):
 
 
 def work_estimate(adapter, adir, cpu_num, assignment):
+	"""Estimate the remaining work time for a given assignment."""
 	section = "Worker #{0}".format(cpu_num + 1) if options.num_workers > 1 else SEC.Internals
 	msec_per_iter = p = None
 	if config.has_option(section, "msec_per_iter") and config.has_option(section, "exponent"):
@@ -3914,6 +3962,7 @@ def work_estimate(adapter, adir, cpu_num, assignment):
 
 
 def string_to_hash(astr):
+	"""Converts a string to a hash value using a modified MD5 algorithm."""
 	md5_hash = md5(astr.encode("utf-8")).hexdigest()
 
 	ahash = 0
@@ -3929,6 +3978,7 @@ def string_to_hash(astr):
 
 
 def rolling_average_work_unit_complete(adapter, adir, cpu_num, tasks, assignment):
+	"""Updates rolling average work unit completion time and hash based on the next assignment."""
 	ahash = config.getint(SEC.Internals, "RollingHash") if config.has_option(SEC.Internals, "RollingHash") else 0
 	time_to_complete = (
 		config.getint(SEC.Internals, "RollingCompleteTime") if config.has_option(SEC.Internals, "RollingCompleteTime") else 0
@@ -3950,6 +4000,7 @@ def rolling_average_work_unit_complete(adapter, adir, cpu_num, tasks, assignment
 
 
 def adjust_rolling_average(dirs):
+	"""Adjusts the 30-day rolling average based on the current work assignments."""
 	current_time = time.time()
 	ahash = 0
 	time_to_complete = 0
@@ -4005,7 +4056,7 @@ def adjust_rolling_average(dirs):
 
 
 def output_status(dirs, cpu_num=None):
-	"""Outputs the current status of all assignments."""
+	"""Outputs the status of queued work and expected completion dates for given directories."""
 	logging.info("Below is a report on the work you have queued and any expected completion dates.")
 	ll_and_prp_cnt = 0
 	prob = 0.0
@@ -4105,7 +4156,7 @@ def output_status(dirs, cpu_num=None):
 
 
 def get_disk_usage(path):
-	"""Return the disk space usage of a specified directory."""
+	"""Calculate the total disk usage of all files in the given directory, excluding symbolic links."""
 	total = 0
 	for dirpath, _dirnames, filenames in os.walk(path):
 		for filename in filenames:
@@ -4116,7 +4167,7 @@ def get_disk_usage(path):
 
 
 def check_disk_space(dirs):
-	"""Checks if sufficient disk space is available."""
+	"""Check and log the disk space usage and availability, sending alerts if critical thresholds are reached."""
 	usage = disk_usage(workdir)
 
 	if options.worker_disk_space:
@@ -4196,7 +4247,7 @@ Disk space available: {4}
 
 
 def checksum_md5(filename):
-	"""Returns the MD5 checksum of the given file."""
+	"""Calculate and return the MD5 checksum of a given file."""
 	amd5 = md5()
 	with open(filename, "rb") as f:
 		for chunk in iter(lambda: f.read(256 * amd5.block_size), b""):
@@ -4208,7 +4259,7 @@ PROOF_NUMBER_RE = re.compile(br"^(\()?([MF]?(\d+)|(?:(\d+)\*)?(\d+)\^(\d+)([+-]\
 
 
 def upload_proof(adapter, filename):
-	"""Upload a proof file to the PrimeNet server."""
+	"""Uploads a proof file to the server in chunks, resuming from the last uploaded position if interrupted."""
 	max_chunk_size = config.getfloat(SEC.PrimeNet, "UploadChunkSize") if config.has_option(SEC.PrimeNet, "UploadChunkSize") else 5
 	max_chunk_size = int(min(max(max_chunk_size, 1), 8) * 1024 * 1024)
 	starttime = timeit.default_timer()
@@ -4346,7 +4397,7 @@ def upload_proof(adapter, filename):
 
 
 def upload_proofs(adapter, adir, cpu_num):
-	"""Uploads any proof files in the given directory to the server."""
+	"""Uploads proof files from a given directory."""
 	if config.has_option(SEC.PrimeNet, "ProofUploads") and not config.getboolean(SEC.PrimeNet, "ProofUploads"):
 		return
 	proof = os.path.join(adir, "proof")
@@ -4384,7 +4435,7 @@ If you believe this is a bug with AutoPrimeNet, please create an issue: https://
 
 
 def aupload_proofs(dirs):
-	"""Uploads any proof files found in the given directories."""
+	"""Uploads proofs from the given directories."""
 	for i, adir in enumerate(dirs):
 		adapter = logging.LoggerAdapter(logger, {"cpu_num": i} if options.dirs else None)
 		cpu_num = i if options.dirs else options.cpu
@@ -4626,6 +4677,7 @@ def unreserve(dirs, p):
 
 
 def get_proof_data(adapter, assignment_aid, file):
+	"""Downloads proof data for a given assignment and writes it to a file."""
 	max_chunk_size = (
 		int(config.getfloat(SEC.PrimeNet, "DownloadChunkSize") * 1024 * 1024)
 		if config.has_option(SEC.PrimeNet, "DownloadChunkSize")
@@ -4662,6 +4714,7 @@ IS_HEX_RE = re.compile(br"^[0-9a-fA-F]*$")  # string.hexdigits
 
 
 def download_cert(adapter, adir, filename, assignment):
+	"""Downloads and verifies the certification starting value for a given assignment."""
 	adapter.info("Downloading CERT starting value for {0} to {1!r}".format(exponent_to_str(assignment), filename))
 	with tempfile.NamedTemporaryFile("wb", dir=adir, delete=False) as f:
 		amd5 = get_proof_data(adapter, assignment.uid, f)
@@ -4681,6 +4734,7 @@ def download_cert(adapter, adir, filename, assignment):
 
 
 def download_certs(adapter, adir, tasks):
+	"""Downloads certification files for given assignments if they do not already exist."""
 	for assignment in tasks:
 		if isinstance(assignment, Assignment) and assignment.work_type == PRIMENET.WORK_TYPE_CERT:
 			filename = os.path.join(adir, "{0}.cert".format(exponent_to_str(assignment)))
@@ -4851,6 +4905,7 @@ def get_assignment(
 
 
 def get_cert_work(adapter, adir, cpu_num, current_time, progress, tasks):
+	"""Manages the retrieval and assignment of certification work based on configuration and resource limits."""
 	if config.has_option(SEC.PrimeNet, "QuitGIMPS") and config.getboolean(SEC.PrimeNet, "QuitGIMPS"):
 		return
 	if not options.cert_work or options.days_of_work <= 0 or options.cpu_hours <= 12:
@@ -5115,7 +5170,7 @@ def report_result(adapter, ar, message, assignment, result_type, tasks, retry_co
 
 
 def submit_mersenne_ca_results(adapter, lines, retry_count=0):
-	"""Submit results for exponents over 1,000,000,000 using https://www.mersenne.ca/submit-results.php"""
+	"""Submit results for exponents over 1,000,000,000 using https://www.mersenne.ca/submit-results.php."""
 	length = len(lines)
 	adapter.info("Submitting {0:n} results to mersenne.ca".format(length))
 	retry = rejected = False
@@ -5182,6 +5237,7 @@ CUDA_RESULTPATTERN = re.compile(r"CUDALucas v|CUDAPm1 v")
 
 
 def parse_result(adapter, adir, resultsfile, sendline):
+	"""Parses the result from a given sendline, processes it, and sends the appropriate response to the server."""
 	if CUDA_RESULTPATTERN.search(sendline):  # CUDALucas or CUDAPm1
 		ar = cuda_result_to_json(resultsfile, sendline)
 	else:  # Mlucas or GpuOwl
@@ -5587,6 +5643,7 @@ If you believe this is a bug with AutoPrimeNet, please create an issue: https://
 
 
 def tf1g_unreserve_all(adapter, cpu_num, retry_count=0):
+	"""Unreserve all TF1G assignments for a given worker."""
 	guid = get_guid(config)
 	if not options.user_id:
 		adapter.error("Failed to unreserve TF1G exponents due to missing PrimeNet User ID.")
@@ -5656,7 +5713,7 @@ def unreserve_all(dirs):
 
 
 def update_assignment(adapter, cpu_num, assignment, task):
-	"""Updates the details of a PrimeNet assignment."""
+	"""Update the assignment based on various conditions and options, potentially converting work types and adjusting bounds."""
 	bounds = ("MIN", "MID", "MAX")
 	changed = False
 	if assignment.work_type == PRIMENET.WORK_TYPE_PRP and (
@@ -5839,6 +5896,7 @@ def register_assignments(adapter, adir, cpu_num, tasks):
 
 
 def register_exponents(dirs):
+	"""Registers specific exponents by generating assignment lines and adding them to the work file."""
 	wrapper = textwrap.TextWrapper(width=75)
 	print(
 		wrapper.fill(
@@ -6030,6 +6088,7 @@ https://www.mersenne.ca/M{0}
 
 
 def tf1g_fetch(adapter, adir, cpu_num, max_assignments=None, max_ghd=None, recover=False, recover_all=False, retry_count=0):
+	"""Fetches TF1G assignments from mersenne.ca with optional recovery."""
 	guid = get_guid(config)
 	data = {"gimps_login": options.user_id}
 	if not recover_all:
@@ -6546,6 +6605,7 @@ def ping_server(ping_type=1):
 
 
 def is_pyinstaller():
+	"""Check if the script is running as a PyInstaller bundle."""
 	# Adapted from: https://pyinstaller.org/en/stable/runtime-information.html
 	return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 

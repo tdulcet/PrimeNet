@@ -60,6 +60,7 @@ try:
 except ImportError:
 
 	def log2(x):
+		"""Calculate the base-2 logarithm of a given number."""
 		return math.log(x, 2)
 
 
@@ -69,6 +70,7 @@ if sys.platform != "win32":
 	libc.wcswidth.restype = ctypes.c_int
 
 	def wcswidth(astr):
+		"""Returns the number of columns needed to display the given wide-character string."""
 		return libc.wcswidth(astr, len(astr))
 
 else:
@@ -286,6 +288,7 @@ MFAKTO_RE = re.compile(r"^(M[0-9]+)\.ckp(\.bu)?$")
 
 # Enum
 class scale:
+	"""Enumeration for different scaling systems."""
 	SI = 0
 	IEC = 1
 	IEC_I = 2
@@ -348,7 +351,7 @@ PP1_STATES = ("", "Stage 1", "Midstage", "Stage 2", "GCD", "Done")
 
 
 class work_unit(object):
-	"""Represents a single work unit, encapsulating its properties and related methods."""
+	"""Represents a work unit for GIMPS computations."""
 
 	__slots__ = (
 		"work_type",
@@ -404,7 +407,7 @@ class work_unit(object):
 	)
 
 	def __init__(self, work_type=None):
-		"""Initializes a new work_unit instance with specified properties."""
+		"""Initializes a new work unit with optional work type."""
 		self.work_type = work_type
 		# k*b^n+c
 		self.k = 1.0
@@ -466,6 +469,7 @@ for i in range(256):
 
 
 def checkpoint_checksum(buffer):
+	"""Calculate a CRC-32 like checksum for the given buffer."""
 	chksum = 0
 	for b in bytearray(buffer):
 		chksum = ((chksum << 8) ^ crc32_table[(chksum >> 24) ^ b]) & 0xFFFFFFFF
@@ -474,7 +478,7 @@ def checkpoint_checksum(buffer):
 
 # Adapted from: https://github.com/tdulcet/Distributed-Computing-Scripts/blob/master/primenet.py
 def exponent_to_str(assignment):
-	"""Converts a work unit assignment to a human-readable string."""
+	"""Converts an assignment's exponent details into a formatted string representation."""
 	if not assignment.n:
 		buf = "{0:.0f}".format(assignment.k + assignment.c)
 	elif assignment.k != 1.0:
@@ -495,7 +499,7 @@ def exponent_to_str(assignment):
 
 
 def assignment_to_str(assignment):
-	"""Converts a work unit assignment to a human-readable string."""
+	"""Converts an assignment object to its string representation, including known factors if present."""
 	buf = exponent_to_str(assignment)
 	if not assignment.known_factors:
 		return buf
@@ -503,7 +507,7 @@ def assignment_to_str(assignment):
 
 
 def strcol(astr):
-	"""Returns the number of columns that the given string would take up if printed."""
+	"""Returns the display width of a string, raising an error if it contains nonprintable wide characters."""
 	width = wcswidth(astr)
 	if width == -1:
 		msg = "wcswidth failed. Nonprintable wide character."
@@ -512,7 +516,7 @@ def strcol(astr):
 
 
 def output_table(rows):
-	"""Formats and outputs the status of work units in a tabular format."""
+	"""Formats and prints a table from a list of rows with aligned columns."""
 	amax = max(len(row) for row in rows)
 	for row in rows:
 		row.extend("" for _ in range(amax - len(row)))
@@ -529,6 +533,7 @@ def output_table(rows):
 
 # Adapted from: https://github.com/tdulcet/Table-and-Graph-Libs/blob/master/python/graphs.py
 def outputunit(number, ascale=scale.IEC_I):
+	"""Converts a number to a human-readable string with appropriate unit suffix based on the given scale."""
 	if ascale in {scale.IEC, scale.IEC_I}:
 		scale_base = 1024
 	elif ascale == scale.SI:
@@ -565,11 +570,13 @@ def outputunit(number, ascale=scale.IEC_I):
 if hasattr(int, "to_bytes"):
 
 	def to_bytes(n, length=1, byteorder="little"):
+		"""Convert an integer to a bytes object of specified length and byte order."""
 		return n.to_bytes(length, byteorder)
 
 else:
 
 	def to_bytes(n, length=1, byteorder="little"):
+		"""Convert an integer to a bytes object of specified length and byte order."""
 		if byteorder == "little":
 			order = range(length)
 		elif byteorder == "big":
@@ -586,11 +593,12 @@ if gmp_lib:
 		_fields_ = (("mp_alloc", ctypes.c_int), ("mp_size", ctypes.c_int), ("mp_d", ctypes.POINTER(ctypes.c_ulong)))
 
 	def mpz_import(value, mpz):
+		"""Imports an integer value into a GMP mpz_t type."""
 		abytes = to_bytes(value, -(value.bit_length() // -8))
 		gmp.__gmpz_import(ctypes.byref(mpz), len(abytes), -1, 1, 0, 0, abytes)
 
 	def jacobi(a, n):
-		"""Returns the Jacobi symbol (a/n), where n is an odd integer."""
+		"""Calculate the Jacobi symbol (a/n) using GMP library functions."""
 		a_mpz = mpz_t()
 		n_mpz = mpz_t()
 
@@ -609,7 +617,7 @@ if gmp_lib:
 else:
 	# Adapted from: https://rosettacode.org/wiki/Jacobi_symbol#Python
 	def jacobi(a, n):
-		"""Returns the Jacobi symbol (a/n), where n is an odd integer."""
+		"""Compute the Jacobi symbol (a/n) for given integers a and n."""
 		if n <= 0:
 			msg = "'n' must be a positive integer."
 			raise ValueError(msg)
@@ -631,6 +639,7 @@ else:
 
 
 def jacobi_test(wu, p, words, filename):
+	"""Performs a Jacobi error check on the given work unit."""
 	logging.debug("{0!r}: Performing Jacobi Error Check, this may take a while…".format(filename))
 	start = timeit.default_timer()
 	wu.jacobi = jacobi(words - 2, (1 << p) - 1)
@@ -647,23 +656,25 @@ def jacobi_test(wu, p, words, filename):
 if hasattr(int, "from_bytes"):
 
 	def from_bytes(abytes, byteorder="little"):
-		"""Converts a byte sequence to a corresponding value."""
+		"""Convert a byte sequence to an integer using the specified byte order."""
 		return int.from_bytes(abytes, byteorder)
 
 else:
 
 	def from_bytes(abytes, byteorder="little"):
-		"""Converts a byte sequence to a corresponding value."""
+		"""Convert a byte sequence to an integer using the specified byte order."""
 		if byteorder == "big":
 			abytes = reversed(abytes)
 		return sum(b << i * 8 for i, b in enumerate(bytearray(abytes)))
 
 
 def rotr(value, count, p, n):
+	"""Performs a bitwise right rotation on a given value."""
 	return (value >> count) | (value << (p - count) & n)
 
 
 def unpack(aformat, file, noraise=False):
+	"""Unpacks binary data from a file according to the specified format."""
 	size = struct.calcsize(aformat)
 	buffer = file.read(size)
 	if len(buffer) != size:
@@ -674,6 +685,7 @@ def unpack(aformat, file, noraise=False):
 
 
 def read_value_prime95(file, aformat, asum):
+	"""Read a value from a Prime95 work unit file and update the checksum."""
 	result = unpack(aformat, file)
 	if options.check:
 		for char, val in zip(aformat[1:], result):
@@ -689,6 +701,7 @@ def read_value_prime95(file, aformat, asum):
 
 
 def read_array_prime95(file, size, asum):
+	"""Read an array from a Prime95 work unit file and update the checksum."""
 	buffer = file.read(size)
 	if len(buffer) != size:
 		raise EOFError
@@ -698,6 +711,7 @@ def read_array_prime95(file, size, asum):
 
 
 def read_residue_prime95(file, asum):
+	"""Read a residue from a Prime95 work unit file and update the checksum."""
 	(alen,), asum = read_value_prime95(file, "<I", asum)
 
 	aformat = "<{0}I".format(alen)
@@ -1247,6 +1261,7 @@ def parse_work_unit_prime95(filename):
 
 
 def read_residue_mlucas(file, nbytes, filename, check=False):
+	"""Reads and verifies the residue from an Mlucas work unit file."""
 	residue = None
 	if options.check or check:
 		buffer = file.read(nbytes)
@@ -1934,6 +1949,7 @@ def parse_work_unit_mfakto(filename):
 
 
 def parse_proof(filename):
+	"""Parse a PRP proof file and return a work unit object with extracted data."""
 	wu = work_unit(WORK_PRP)
 
 	try:
@@ -2030,7 +2046,7 @@ def parse_proof(filename):
 
 
 def one_line_status(file, num, index, wu):
-	"""Generates a concise one-line status report for a work unit."""
+	"""Generates a one-line status summary for a given work unit."""
 	stage = None
 	if wu.work_type == WORK_CERT:
 		work_type_str = "Certify"
@@ -2164,7 +2180,7 @@ def one_line_status(file, num, index, wu):
 
 
 def json_status(file, wu, program):
-	"""Produces a JSON-formatted status report for a work unit."""
+	"""Generate a JSON-compatible status dictionary for a given work unit and program."""
 	result = OrderedDict((
 		("program", program),
 		("k", wu.k),
