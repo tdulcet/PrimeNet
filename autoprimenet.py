@@ -5041,6 +5041,9 @@ def cuda_result_to_json(resultsfile, sendline):
 	return ar
 
 
+GHZDAYS_RE = re.compile(r"CPU credit is ([0-9]+(?:\.[0-9]+)?) GHz-days")
+
+
 def report_result(adapter, ar, message, assignment, result_type, tasks, retry_count=0):
 	"""Submit one result line using v5 API, will be attributed to the computer identified by guid."""
 	"""Return False if the submission should be retried"""
@@ -5135,9 +5138,15 @@ def report_result(adapter, ar, message, assignment, result_type, tasks, retry_co
 		# return False
 	else:
 		rc = int(result["pnErrorResult"])
+		ghd = 0
 		if rc == PRIMENET.ERROR_OK:
+			ghzdays = GHZDAYS_RE.search(result["pnErrorDetail"])
+			if ghzdays:
+				ghd = float(ghzdays.group(1))
+			else:
+				adapter.warning("Unable to find GHz-days credit value in response")
 			adapter.debug("Result correctly send to server")
-			return rc
+			return rc, ghd
 		if rc == PRIMENET.ERROR_UNREGISTERED_CPU:
 			# should register again and retry
 			register_instance()
@@ -5147,15 +5156,15 @@ def report_result(adapter, ar, message, assignment, result_type, tasks, retry_co
 		# In all other error case, the submission must not be retried
 		elif rc == PRIMENET.ERROR_INVALID_ASSIGNMENT_KEY:
 			# TODO: Delete assignment from workfile if it is not done
-			return rc
+			return rc, ghd
 		elif rc == PRIMENET.ERROR_WORK_NO_LONGER_NEEDED:
 			# TODO: Delete assignment from workfile if it is not done
-			return rc
+			return rc, ghd
 		elif rc == PRIMENET.ERROR_NO_ASSIGNMENT:
 			# TODO: Delete assignment from workfile if it is not done
-			return rc
+			return rc, ghd
 		elif rc == PRIMENET.ERROR_INVALID_RESULT_TYPE:
-			return rc
+			return rc, ghd
 		elif rc == PRIMENET.ERROR_INVALID_PARAMETER:
 			adapter.error(
 				"INVALID PARAMETER: This may be a bug in the program, please create an issue: https://github.com/tdulcet/AutoPrimeNet/issues"
@@ -5206,12 +5215,12 @@ def submit_mersenne_ca_results(adapter, lines, retry_count=0):
 				)
 			)
 		accepted = sum(results["accepted"].values())
-		adapter.info("Accepted {0:n} result{1}.".format(accepted, "s" if accepted != 1 else ""))
-		factors = results["factors"]
+		adapter.info("Submitted {0:n} result{1} to mersenne.ca.".format(accepted, "s" if accepted != 1 else ""))
+		factors = results["factors"]["new"]
 		adapter.info(
 			"Total credit is {0:n} GHz-days{1}.".format(
 				sum(results["ghd"].values()),
-				", Found {0:n} new factor{1}".format(factors["new"], "s" if factors["new"] != 1 else "") if factors["new"] else "",
+				", found {0:n} new factor{1}".format(factors, "s" if factors != 1 else "") if factors else "",
 			)
 		)
 	if retry:
@@ -5525,8 +5534,10 @@ def submit_work(dirs, adapter, adir, cpu_num, tasks):
 
 	# Only for new results, to be appended to results_sent
 	mersenne_ca_result_send = []
+	accepted = 0
 	rejected = {}
 	failed = []
+	ghzdays = []
 
 	if config.has_option(SEC.Email, "PrimeNet_error_code_ignore"):
 		error_code_ignore = config.get(SEC.Email, "PrimeNet_error_code_ignore")
@@ -5552,9 +5563,13 @@ def submit_work(dirs, adapter, adir, cpu_num, tasks):
 					result = report_result(adapter, ar, message, assignment, result_type, tasks)
 					if result is not None:
 						file.write(sendline + "\n")
-						if result and result not in error_code_ignore:
-							reason = "PrimeNet error {0} ({1})".format(result, ERRORS.get(result, "Unknown error code"))
+						ec, ghd = result
+						if not ec:
+							accepted += 1
+						elif ec not in error_code_ignore:
+							reason = "PrimeNet error {0} ({1})".format(ec, ERRORS.get(ec, "Unknown error code"))
 							rejected.setdefault(reason, []).append(sendline)
+						ghzdays.append(ghd)
 						is_sent = True
 					else:
 						failed.append(sendline)
@@ -5565,6 +5580,10 @@ def submit_work(dirs, adapter, adir, cpu_num, tasks):
 						adjust_rolling_average(dirs)
 					else:
 						rolling_average_work_unit_complete(adapter, adir, cpu_num, tasks, assignment)
+
+		if accepted > 1:
+			adapter.info("Submitted {0:n} result{1} to mersenne.org.".format(accepted, "s" if accepted != 1 else ""))
+			adapter.info("Total credit is {0:n} GHz-days.".format(sum(ghzdays)))
 
 		# send all mersenne.ca results at once, to minimize server overhead
 		if mersenne_ca_result_send:
@@ -6094,7 +6113,7 @@ def tf1g_fetch(adapter, adir, cpu_num, max_assignments=None, max_ghd=None, recov
 	if not recover_all:
 		data.update({"cpu": guid, "worker": cpu_num})
 	if recover or recover_all:
-		logging.info("Recovering TF1G assignments")
+		adapter.info("Recovering TF1G assignments")
 		data["myassignments"] = 1
 	else:
 		stages = get_stages_mfaktx_ini(adapter, adir)
@@ -6133,6 +6152,10 @@ def tf1g_fetch(adapter, adir, cpu_num, max_assignments=None, max_ghd=None, recov
 		logging.exception(e, exc_info=options.debug)
 		retry = True
 	else:
+		if recover or recover_all:
+			adapter.debug("Recovered {0:n} TF1G assignment{1} from mersenne.ca".format(len(tests), "s" if len(tests) != 1 else ""))
+		else:
+			adapter.debug("Fetched {0:n} TF1G assignment{1} from mersenne.ca".format(len(tests), "s" if len(tests) != 1 else ""))
 		return tests
 	if retry:
 		if retry_count >= 2:
@@ -6177,7 +6200,8 @@ def recover_assignments(dirs, recover_all=False):
 						test, _ = update_assignment(adapter, cpu_num, test, task)
 					tests.append(test)
 
-			adapter.debug("Recovered {0:n} assignment{1}".format(len(tests), "s" if len(tests) != 1 else ""))
+			if len(tests) > 1:
+				adapter.info("Recovered {0:n} assignment{1}".format(len(tests), "s" if len(tests) != 1 else ""))
 			write_workfile(adir, tests)
 
 	# As of early 2018, here is the full list of assignment-type codes supported by the Primenet server; Mlucas
@@ -6411,7 +6435,7 @@ def get_assignments(adapter, adir, cpu_num, progress, tasks):
 			adapter.debug(
 				"{0:n} ≥ {1:n} assignments already in {2!r}, not getting new work".format(num_existing, num_cache, workfile)
 			)
-			if cur_time_left:
+			if cur_time_left and options.min_exp and options.min_exp >= MAX_PRIMENET_EXP:
 				adapter.info(
 					"Estimated time to complete queued work is {0}, days of work requested is {1}".format(time_left, days_work)
 				)
@@ -6460,9 +6484,10 @@ def get_assignments(adapter, adir, cpu_num, progress, tasks):
 		tasks.extend(assignments)
 		num_existing += num_fetched
 
-	adapter.debug("Fetched {0:n} assignment{1}".format(len(new_tasks), "s" if len(new_tasks) != 1 else ""))
+	if len(new_tasks) > 1:
+		adapter.info("Fetched {0:n} assignment{1}".format(len(new_tasks), "s" if len(new_tasks) != 1 else ""))
 	if len(tasks) <= 5:
-		output_status([adir], cpu_num)
+		output_status((adir,), cpu_num)
 	if num_fetched < num_to_get:
 		adapter.error(
 			"Failed to get requested number of new assignments, {0:n} requested, {1:n} successfully retrieved".format(
