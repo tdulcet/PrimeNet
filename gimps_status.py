@@ -289,6 +289,7 @@ MFAKTO_RE = re.compile(r"^(M[0-9]+)\.ckp(\.bu)?$")
 # Enum
 class scale:
 	"""Enumeration for different scaling systems."""
+
 	SI = 0
 	IEC = 1
 	IEC_I = 2
@@ -640,14 +641,12 @@ else:
 
 def jacobi_test(wu, p, words, filename):
 	"""Performs a Jacobi error check on the given work unit."""
-	logging.debug("{0!r}: Performing Jacobi Error Check, this may take a while…".format(filename))
+	logging.debug("%r: Performing Jacobi Error Check, this may take a while…", filename)
 	start = timeit.default_timer()
 	wu.jacobi = jacobi(words - 2, (1 << p) - 1)
 	end = timeit.default_timer()
 	logging.info(
-		"{0!r}: Jacobi: {1:n} ({2}), Time: {3:.1f} ms".format(
-			filename, wu.jacobi, "Passed" if wu.jacobi == -1 else "Failed", (end - start) * 1000
-		)
+		"%r: Jacobi: %s (%s), Time: %.1f ms", filename, wu.jacobi, "Passed" if wu.jacobi == -1 else "Failed", (end - start) * 1000
 	)
 	# return wu.jacobi
 
@@ -745,7 +744,7 @@ def parse_work_unit_prime95(filename):
 
 			if magicnum == CERT_MAGICNUM:
 				if wu.version != CERT_VERSION:
-					logging.error("Cert savefile with unsupported version = {0}".format(wu.version))
+					logging.error("Cert savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_CERT
@@ -759,7 +758,7 @@ def parse_work_unit_prime95(filename):
 					wu.res2048 = "{0:0512X}".format(residue & (1 << 2048) - 1)
 			elif magicnum == FACTOR_MAGICNUM:
 				if wu.version != FACTOR_VERSION:
-					logging.error("Factor with unsupported version = {0}".format(wu.version))
+					logging.error("Factor with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_FACTOR
@@ -767,7 +766,7 @@ def parse_work_unit_prime95(filename):
 				wu.factor_found, wu.bits, wu.apass, _fachsw, _facmsw, _endpthi, _endptlo = unpack("<IIIIIII", f)
 			elif magicnum == LL_MAGICNUM:
 				if wu.version != LL_VERSION:
-					logging.error("LL savefile with unsupported version = {0}".format(wu.version))
+					logging.error("LL savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_TEST
@@ -786,7 +785,7 @@ def parse_work_unit_prime95(filename):
 						jacobi_test(wu, wu.n, residue, filename)
 			elif magicnum == PRP_MAGICNUM:
 				if not 1 <= wu.version <= PRP_VERSION:
-					logging.error("PRP savefile with unsupported version = {0}".format(wu.version))
+					logging.error("PRP savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_PRP
@@ -842,14 +841,14 @@ def parse_work_unit_prime95(filename):
 					if wu.res64:
 						res64 = int(res64, 16)
 						if res64 != ares64:
-							logging.error("Res64 error. Expected {0:X}, actual {1:X}.".format(res64, ares64))
+							logging.error("Res64 error. Expected %X, actual %X.", res64, ares64)
 					else:
 						wu.res64 = "{0:016X}".format(ares64)
 					ares2048 = residue & (1 << 2048) - 1
 					if wu.res2048:
 						res2048 = int(res2048, 16)
 						if res2048 != ares2048:
-							logging.error("Res2048 error. Expected {0:X}, actual {1:X}.".format(res2048, ares2048))
+							logging.error("Res2048 error. Expected %X, actual %X.", res2048, ares2048)
 					else:
 						wu.res2048 = "{0:0512X}".format(ares2048)
 
@@ -872,7 +871,7 @@ def parse_work_unit_prime95(filename):
 						_d, asum = read_residue_prime95(f, asum)
 			elif magicnum == ECM_MAGICNUM:
 				if not 1 <= wu.version <= ECM_VERSION:
-					logging.error("ECM savefile with unsupported version = {0}".format(wu.version))
+					logging.error("ECM savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_ECM
@@ -1038,7 +1037,7 @@ def parse_work_unit_prime95(filename):
 								_gg, asum = read_residue_prime95(f, asum)
 			elif magicnum == PM1_MAGICNUM:
 				if not 1 <= wu.version <= PM1_VERSION:
-					logging.error("P-1 savefile with unsupported version = {0}".format(wu.version))
+					logging.error("P-1 savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_PMINUS1
@@ -1182,7 +1181,7 @@ def parse_work_unit_prime95(filename):
 								_gg, asum = read_residue_prime95(f, asum)
 			elif magicnum == PP1_MAGICNUM:
 				if not 1 <= wu.version <= PP1_VERSION:
-					logging.error("P+1 savefile with unsupported version = {0}".format(wu.version))
+					logging.error("P+1 savefile with unsupported version = %s", wu.version)
 					return None
 
 				wu.work_type = WORK_PPLUS1
@@ -1241,7 +1240,7 @@ def parse_work_unit_prime95(filename):
 						if have_gg:
 							_gg, asum = read_residue_prime95(f, asum)
 			else:
-				logging.error("savefile with unknown magicnum = {0:#x}".format(magicnum))
+				logging.error("savefile with unknown magicnum = %#x", magicnum)
 				return None
 
 			if options.check and f.read():
@@ -1250,11 +1249,11 @@ def parse_work_unit_prime95(filename):
 			asum &= 0xFFFFFFFF
 
 			if options.check and filesum != asum:
-				logging.error("Checksum error. Got {0:X}, expected {1:X}.".format(filesum, asum))
+				logging.error("Checksum error. Got %X, expected %X.", filesum, asum)
 	except EOFError:
 		return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	return wu
@@ -1278,13 +1277,13 @@ def read_residue_mlucas(file, nbytes, filename, check=False):
 	if options.check:
 		ares64 = residue & 0xFFFFFFFFFFFFFFFF
 		if res64 != ares64:
-			logging.error("{0!r}: Res64 checksum error. Expected {1:X}, got {2:X}.".format(filename, res64, ares64))
+			logging.error("%r: Res64 checksum error. Expected %X, got %X.", filename, res64, ares64)
 		ares35m1 = residue % 0x7FFFFFFFF
 		if res35m1 != ares35m1:
-			logging.error("{0!r}: Res35m1 checksum error. Expected {1}, got {2}.".format(filename, res35m1, ares35m1))
+			logging.error("%r: Res35m1 checksum error. Expected %s, got %s.", filename, res35m1, ares35m1)
 		ares36m1 = residue % 0xFFFFFFFFF
 		if res36m1 != ares36m1:
-			logging.error("{0!r}: Res36m1 checksum error. Expected {1}, got {2}.".format(filename, res36m1, ares36m1))
+			logging.error("%r: Res36m1 checksum error. Expected %s, got %s.", filename, res36m1, ares36m1)
 		# print("{0:016X}".format(ares64), "{0:010X}".format(ares35m1), "{0:010X}".format(ares36m1))
 	return residue, res64, res35m1, res36m1
 
@@ -1361,7 +1360,7 @@ def parse_work_unit_mlucas(filename, exponent, stage):
 				#         residue1 += (a2 - r * pow(p % a2, -1, a2) % a2) * p
 				#     residue1 //= a2
 				#     wu.isProbablePrime = residue1 == 1
-				#     logging.debug("{0}: Probable Prime: {1}".format(filename, wu.isProbablePrime))
+				#     logging.debug("%s: Probable Prime: %s", filename, wu.isProbablePrime)
 
 				wu.stage = "PRP"
 				wu.pct_complete = nsquares / p
@@ -1382,7 +1381,7 @@ def parse_work_unit_mlucas(filename, exponent, stage):
 				wu.stage = "S{0}".format(stage)
 				wu.pct_complete = None  # ?
 			else:
-				logging.error("savefile with unknown TEST_TYPE = {0}".format(t))
+				logging.error("savefile with unknown TEST_TYPE = %s", t)
 				return None
 
 			if m == MODULUS_TYPE_MERSENNE:
@@ -1391,7 +1390,7 @@ def parse_work_unit_mlucas(filename, exponent, stage):
 				wu.n = p
 				wu.c = 1
 			else:
-				logging.error("savefile with unknown MODULUS_TYPE = {0}".format(m))
+				logging.error("savefile with unknown MODULUS_TYPE = %s", m)
 				return None
 
 			wu.res64 = "{0:016X}".format(res64)
@@ -1408,7 +1407,7 @@ def parse_work_unit_mlucas(filename, exponent, stage):
 	except EOFError:
 		return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	return wu
@@ -1434,12 +1433,12 @@ def parse_work_unit_cudalucas(filename, p):
 
 			q, n, j, offset, total_time, _time_adj, _iter_adj, _, magic_number, checksum = unpack("=IIIIIIIIII", f)
 			if p != q:
-				logging.error("Expecting the exponent {0}, but found {1}".format(p, q))
+				logging.error("Expecting the exponent %s, but found %s", p, q)
 				return None
 			if magic_number:
-				logging.error("savefile with unknown magic_number = {0}".format(magic_number))
+				logging.error("savefile with unknown magic_number = %s", magic_number)
 			if options.check and checksum != chksum:
-				logging.error("Checksum error. Got {0:X}, expected {1:X}.".format(checksum, chksum))
+				logging.error("Checksum error. Got %X, expected %X.", checksum, chksum)
 			total_time <<= 15
 			_time_adj <<= 15
 
@@ -1467,7 +1466,7 @@ def parse_work_unit_cudalucas(filename, p):
 	except EOFError:
 		return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	return wu
@@ -1510,7 +1509,7 @@ def parse_work_unit_cudapm1(filename, p):
 				_,
 			) = unpack("=IIIIIIIIIIIIIIIIIIIIIIIII", f)
 			if p != q:
-				logging.error("Expecting the exponent {0}, but found {1}".format(p, q))
+				logging.error("Expecting the exponent %s, but found %s", p, q)
 				return None
 
 			wu.pct_complete = None  # ?
@@ -1540,7 +1539,7 @@ def parse_work_unit_cudapm1(filename, p):
 	except EOFError:
 		return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	return wu
@@ -1576,7 +1575,7 @@ def parse_work_unit_gpuowl(filename):
 				elif ll_v1:
 					version, exponent, iteration, ahash = ll_v1.groups()
 				else:
-					logging.error("LL savefile with unknown version: {0}".format(header))
+					logging.error("LL savefile with unknown version: %s", header)
 					return None
 
 				wu.n = int(exponent)
@@ -1606,7 +1605,7 @@ def parse_work_unit_gpuowl(filename):
 					h.update(buffer)
 					aahash = from_bytes(h.digest())
 					if ahash != aahash:
-						logging.error("Hash error. Expected {0:X}, actual {1:X}.".format(ahash, aahash))
+						logging.error("Hash error. Expected %X, actual %X.", ahash, aahash)
 				if options.jacobi:
 					if executor:
 						executor.submit(jacobi_test, wu, wu.n, residue, filename)
@@ -1635,7 +1634,7 @@ def parse_work_unit_gpuowl(filename):
 				elif prp_v9:
 					version, exponent, iteration, block_size, res64 = prp_v9.groups()
 				else:
-					logging.error("PRP savefile with unknown version: {0}".format(header))
+					logging.error("PRP savefile with unknown version: %s", header)
 					return None
 
 				wu.n = int(exponent)
@@ -1659,7 +1658,7 @@ def parse_work_unit_gpuowl(filename):
 					# res64 = int(res64, 16)
 					# ares64 = residue & 0xFFFFFFFFFFFFFFFF
 					# if res64 != ares64:
-					# logging.error("Res64 error. Expected {0:X}, actual {1:X}.".format(res64, ares64))
+					# logging.error("Res64 error. Expected %X, actual %X.", res64, ares64)
 					wu.res2048 = "{0:0512X}".format(residue & (1 << 2048) - 1)
 
 				wu.stage = "PRP"
@@ -1689,7 +1688,7 @@ def parse_work_unit_gpuowl(filename):
 					version, exponent, B1, crc = p1final_v1.groups()
 					wu.pct_complete = 1.0
 				else:
-					logging.error("P-1 stage 1 savefile with unknown version: {0}".format(header))
+					logging.error("P-1 stage 1 savefile with unknown version: %s", header)
 					return None
 
 				wu.state = PM1_STATE_STAGE1
@@ -1725,7 +1724,7 @@ def parse_work_unit_gpuowl(filename):
 					nWords = int(nWords)
 					wu.pct_complete = int(kDone) / 2880
 				else:
-					logging.error("P-1 stage 2 savefile with unknown version: {0}".format(header))
+					logging.error("P-1 stage 2 savefile with unknown version: %s", header)
 					return None
 
 				wu.state = PM1_STATE_STAGE2
@@ -1750,7 +1749,7 @@ def parse_work_unit_gpuowl(filename):
 				if tf_v2:
 					version, exponent, bitLo, bitHi, classDone, classTotal = tf_v2.groups()
 				else:
-					logging.error("TF savefile with unknown version: {0}".format(header))
+					logging.error("TF savefile with unknown version: %s", header)
 					return None
 
 				wu.n = int(exponent)
@@ -1760,7 +1759,7 @@ def parse_work_unit_gpuowl(filename):
 				wu.stage = "TF{0}".format(wu.bits)
 				wu.pct_complete = int(classDone) / int(classTotal)
 			else:
-				logging.error("Unknown save/checkpoint file header: {0}".format(header))
+				logging.error("Unknown save/checkpoint file header: %s", header)
 				return None
 
 			# if options.check and f.read():
@@ -1768,14 +1767,14 @@ def parse_work_unit_gpuowl(filename):
 	except EOFError:
 		return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	if options.check and crc is not None:
 		crc = int(crc)
 		acrc = binascii.crc32(buffer) & 0xFFFFFFFF
 		if crc != acrc:
-			logging.error("CRC error. Expected {0:X}, actual {1:X}.".format(crc, acrc))
+			logging.error("CRC error. Expected %X, actual %X.", crc, acrc)
 
 	wu.version = int(version)
 	return wu
@@ -1868,7 +1867,7 @@ def parse_work_unit_mfaktc(filename):
 			if options.check and f.read():
 				return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %R file.", filename)
 		return None
 
 	mfaktc_tf = MFAKTC_TF_RE.match(header)
@@ -1884,7 +1883,7 @@ def parse_work_unit_mfaktc(filename):
 		chksum = checkpoint_checksum(header.rsplit(None, 1)[0])
 		i = int(i, 16)
 		if chksum != i:
-			logging.error("Checksum error. Got {0:X}, expected {1:X}.".format(chksum, i))
+			logging.error("Checksum error. Got %X, expected %X.", chksum, i)
 
 	wagstaff = name_numbers == b"W"  # Wagstaff
 	if wagstaff:
@@ -1917,7 +1916,7 @@ def parse_work_unit_mfakto(filename):
 			if options.check and f.read():
 				return None
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	mfakto_tf = MFAKTO_TF_RE.match(header)
@@ -1931,7 +1930,7 @@ def parse_work_unit_mfakto(filename):
 		chksum = checkpoint_checksum(header.rsplit(None, 1)[0])
 		i = int(i, 16)
 		if chksum != i:
-			logging.error("Checksum error. Got {0:X}, expected {1:X}.".format(chksum, i))
+			logging.error("Checksum error. Got %X, expected %X.", chksum, i)
 
 	wu.n = int(exp)
 	wu.bits = int(bit_min)
@@ -1964,7 +1963,7 @@ def parse_proof(filename):
 				return None
 			wu.version = int(version)
 			if wu.version not in {1, 2}:
-				logging.error("PRP proof file with unknown version = {0}".format(version))
+				logging.error("PRP proof file with unknown version = %s", version)
 				return None
 
 			header, _, _hashlen = f.readline().rstrip().partition(b"=")
@@ -1994,7 +1993,7 @@ def parse_proof(filename):
 				return None
 			proof_number = PROOF_NUMBER_RE.match(number)
 			if not proof_number:
-				logging.error("Error parsing number: {0!r}".format(number))
+				logging.error("Error parsing number: %r", number)
 				return None
 			_, number, exponent, k, b, n, c, factors = proof_number.groups()
 			if exponent:
@@ -2037,7 +2036,7 @@ def parse_proof(filename):
 				wu.res64 = "{0:016X}".format(residue & 0xFFFFFFFFFFFFFFFF)
 				wu.res2048 = "{0:0512X}".format(residue & (1 << 2048) - 1)
 	except (IOError, OSError):
-		logging.exception("Error reading {0!r} file.".format(filename))
+		logging.exception("Error reading %r file.", filename)
 		return None
 
 	wu.stage = "Proof"
@@ -2331,7 +2330,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.mlucas:
 			aaresults = aresults["Mlucas"] = []
@@ -2354,7 +2353,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.cudalucas:
 			aaresults = aresults["CUDALucas"] = []
@@ -2372,7 +2371,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.cudapm1:
 			aaresults = aresults["CUDAPm1"] = []
@@ -2390,7 +2389,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.gpuowl:
 			aaresults = aresults["GpuOwl/PRPLL"] = []
@@ -2420,7 +2419,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.mfaktc:
 			aaresults = aresults["mfaktc"] = []
@@ -2430,7 +2429,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((0, -1, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.mfakto:
 			aaresults = aresults["mfakto"] = []
@@ -2448,7 +2447,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((j, num, file, result))
 					else:
-						logging.error("unable to parse the {0!r} save/checkpoint file".format(file))
+						logging.error("unable to parse the %r save/checkpoint file", file)
 
 		if options.proof:
 			aaresults = aresults["PRP proof"] = []
@@ -2462,7 +2461,7 @@ def main(dirs):
 					if result is not None:
 						aaresults.append((0, -1, file, result))
 					else:
-						logging.error("unable to parse the {0!r} proof file".format(file))
+						logging.error("unable to parse the %r proof file", file)
 
 	if executor:
 		executor.shutdown()

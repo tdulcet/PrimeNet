@@ -671,13 +671,13 @@ class LockFile:
 			except (IOError, OSError) as e:
 				if e.errno == errno.EEXIST:
 					if not i:
-						logging.debug("{0!r} lockfile already exists, waiting...".format(self.lockfile))
+						logging.debug("%r lockfile already exists, waiting...", self.lockfile)
 					time.sleep(min(1 << i, 60 * 1000) / 1000)
 				else:
-					logging.exception("Error opening {0!r} lockfile: {1}".format(self.lockfile, e), exc_info=options.debug)
+					logging.exception("Error opening %r lockfile: %s", self.lockfile, e, exc_info=options.debug)
 					raise
 		if i:
-			logging.debug("Locked {0!r}".format(self.filename))
+			logging.debug("Locked %r", self.filename)
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
@@ -1071,9 +1071,9 @@ def get_opencl_devices():
 	num_platforms = ctypes.c_uint()
 	result = cl.clGetPlatformIDs(0, None, ctypes.byref(num_platforms))
 	if result and result != -1001:  # CL_PLATFORM_NOT_FOUND_KHR
-		logging.error("Failed to get the number of OpenCL platforms: {0}".format(result))
+		logging.error("Failed to get the number of OpenCL platforms: %s", result)
 		return []
-	logging.debug("Number of platforms: {0}".format(num_platforms.value))
+	logging.debug("Number of platforms: %s", num_platforms.value)
 	if not num_platforms.value:
 		return []
 
@@ -1088,9 +1088,9 @@ def get_opencl_devices():
 		num_devices = ctypes.c_uint()
 		result = cl.clGetDeviceIDs(aplatform, 0xFFFFFFFF, 0, None, ctypes.byref(num_devices))  # CL_DEVICE_TYPE_ALL
 		if result and result != -1:  # CL_DEVICE_NOT_FOUND
-			logging.error("Failed to get the number of OpenCL devices: {0}".format(result))
+			logging.error("Failed to get the number of OpenCL devices: %s", result)
 			continue
-		logging.debug("\tNumber of devices: {0}".format(num_devices.value))
+		logging.debug("\tNumber of devices: %s", num_devices.value)
 		if not num_devices.value:
 			continue
 
@@ -1121,7 +1121,7 @@ def get_nvidia_devices():
 		if nvml.nvmlDeviceGetCount(ctypes.byref(device_count)):
 			logging.error("Failed to get the Nvidia device count")
 			return []
-		logging.debug("Total Devices: {0}".format(device_count.value))
+		logging.debug("Total Devices: %s", device_count.value)
 
 		devices = []
 
@@ -1129,7 +1129,7 @@ def get_nvidia_devices():
 			device = ctypes.c_void_p()
 			if nvml.nvmlDeviceGetHandleByIndex(i, ctypes.byref(device)):
 				# raise Exception
-				logging.error("Failed to get handle for Nvidia device {0}".format(i))
+				logging.error("Failed to get handle for Nvidia device %s", i)
 				continue
 
 			buf = ctypes.create_string_buffer(96)  # NVML_DEVICE_NAME_V2_BUFFER_SIZE
@@ -1495,7 +1495,7 @@ def readonly_list_file(filename, mode="r"):
 			for line in file:
 				yield line.rstrip("\n")
 	except (IOError, OSError):
-		# logging.debug("Error reading {0!r} file: {1}".format(filename, e))
+		# logging.debug("Error reading %r file: %s", filename, e)
 		pass
 
 
@@ -1582,7 +1582,7 @@ def config_read():
 	try:
 		config.read([localfile])
 	except ConfigParserError as e:
-		logging.exception("Error reading {0!r} file: {1}".format(localfile, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", localfile, e, exc_info=options.debug)
 	for section in (SEC.PrimeNet, SEC.Email, SEC.Internals):
 		if not config.has_section(section):
 			# Create the section to avoid having to test for it later
@@ -1651,9 +1651,7 @@ def merge_config_and_options(config, options):
 					new_val = str(attr_val)
 				if not config.has_option(section, option) or config.get(section, option) != new_val:
 					logging.debug(
-						"update {0!r} with {1}={2}".format(
-							options.localfile, option, "*" * len(new_val) if "password" in option else new_val
-						)
+						"update %r with %s=%s", options.localfile, option, "*" * len(new_val) if "password" in option else new_val
 					)
 					config.set(section, option, new_val)
 					updated = True
@@ -1816,7 +1814,7 @@ if sys.version_info >= (3, 3):
 		exponent = exponent_to_str(assignment)
 		adigits = int(Decimal(assignment.k).log10() + assignment.n * Decimal(assignment.b).log10()) + 1
 		if adigits <= 300000000:
-			logging.debug("Calculating the number of digits for {0}…".format(exponent))
+			logging.debug("Calculating the number of digits for %s…", exponent)
 			with decimal.localcontext() as ctx:
 				ctx.prec = decimal.MAX_PREC
 				ctx.Emax = decimal.MAX_EMAX
@@ -1826,15 +1824,19 @@ if sys.version_info >= (3, 3):
 				num = str(int(assignment.k) * Decimal(assignment.b) ** assignment.n + assignment.c)
 				adigits = len(num)
 				logging.info(
-					"The exponent {0} has {1:n} decimal digits: {2}".format(
-						exponent, adigits, "{0}…{1}".format(num[:20], num[-20:]) if adigits > 50 else num
-					)
+					"The exponent %s has %s decimal digits: %s",
+					exponent,
+					format(adigits, "n"),
+					"{0}…{1}".format(num[:20], num[-20:]) if adigits > 50 else num,
 				)
 		else:
 			logging.info(
-				"The exponent {0} has approximately {1:n} decimal digits (using formula log10({2.k}) + {2.n} * log10({2.b}) + 1)".format(
-					exponent, adigits, assignment
-				)
+				"The exponent %s has approximately %s decimal digits (using formula log10(%s) + %s * log10(%s) + 1)",
+				exponent,
+				format(adigits, "n"),
+				assignment.k,
+				assignment.n,
+				assignment.b,
 			)
 		return adigits
 
@@ -1844,9 +1846,12 @@ else:
 		"""Calculate the number of decimal digits in the given assignment."""
 		adigits = int(Decimal(assignment.k).log10() + assignment.n * Decimal(assignment.b).log10()) + 1
 		logging.info(
-			"The exponent {0} has approximately {1:n} decimal digits (using formula log10({2.k}) + {2.n} * log10({2.b}) + 1)".format(
-				exponent_to_str(assignment), adigits, assignment
-			)
+			"The exponent %s has approximately %s decimal digits (using formula log10(%s) + %s * log10(%s) + 1)",
+			exponent_to_str(assignment),
+			format(adigits, "n"),
+			assignment.k,
+			assignment.n,
+			assignment.b,
 		)
 		return adigits
 
@@ -1890,7 +1895,7 @@ def parse_assignment(task):
 		assignment.B2 = int(B22)
 	assignment.ra_failed = bool(value) and not assignment.uid
 	# e.g., "57600769", "197ED240A7A41EC575CB408F32DDA661"
-	# logging.debug("type = {0}, assignment_id = {1}".format(work_type, assignment.uid))
+	# logging.debug("type = %s, assignment_id = %s", work_type, assignment.uid)
 	# Extract the subfield containing the exponent, whose position depends on
 	# the assignment type:
 	if work_type in {"Test", "DoubleCheck"}:
@@ -1989,7 +1994,7 @@ def process_add_file(adapter, adir):
 		with LockFile(addfile), io.open(workfile, "a", encoding="utf-8") as file:
 			add = readonly_list_file(addfile)
 			for task in add:
-				adapter.debug("Adding {0!r} line to the {1!r} file".format(task, workfile))
+				adapter.debug("Adding %r line to the %r file", task, workfile)
 				file.write(task + "\n")
 			os.remove(addfile)
 
@@ -2010,15 +2015,15 @@ def read_workfile(adapter, adir):
 				and not assignment.known_factors
 				and assignment.work_type != PRIMENET.WORK_TYPE_PMINUS1
 			):
-				adapter.error("{0!r} file contained composite exponent: {1}.".format(workfile, assignment.n))
+				adapter.error("%r file contained composite exponent: %s.", workfile, assignment.n)
 				illegal_line = True
 			if assignment.work_type == PRIMENET.WORK_TYPE_PMINUS1 and assignment.B1 < 50000:
-				adapter.error("{0!r} file has P-1 with B1 < 50000 (exponent: {1}).".format(workfile, assignment.n))
+				adapter.error("%r file has P-1 with B1 < 50000 (exponent: %s).", workfile, assignment.n)
 				illegal_line = True
 		else:
 			illegal_line = True
 		if illegal_line:
-			adapter.error("Illegal line in {0!r} file: {1!r}".format(workfile, task))
+			adapter.error("Illegal line in %r file: %r", workfile, task)
 			yield task
 		else:
 			yield assignment
@@ -2186,7 +2191,7 @@ def send(subject, message, attachments=None, to=None, cc=None, bcc=None, priorit
 				s.login(options.email_username, options.email_password)
 			s.sendmail(from_addr, to_addrs, msg.as_string())
 	except (smtplib.SMTPException, IOError, OSError) as e:  # socket.error
-		logging.exception("Failed to send e-mail: {0}".format(e), exc_info=options.debug)
+		logging.exception("Failed to send e-mail: %s", e, exc_info=options.debug)
 		return False
 	finally:
 		if s is not None:
@@ -2200,13 +2205,13 @@ def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, 
 		return False
 	if config.has_option(SEC.Email, "send") and not config.getboolean(SEC.Email, "send"):
 		return False
-	logging.info("Sending e-mail: {0}".format(subject))
+	logging.info("Sending e-mail: %s", subject)
 
 	if attachments:
 		aattachments = []
 		for attachment in attachments:
 			if not isinstance(attachment, (tuple, list)) and not os.path.exists(attachment):
-				logging.info("Skipping attachment: cannot read {0!r} file.".format(attachment))
+				logging.info("Skipping attachment: cannot read %r file.", attachment)
 				message += "(Unable to attach the {0!r} file, as it does not exist.)\n".format(attachment)
 			else:
 				aattachments.append(attachment)
@@ -2214,7 +2219,7 @@ def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, 
 
 		if azipfile:
 			if os.path.exists(azipfile):
-				logging.info("File {0!r} already exists.".format(azipfile))
+				logging.info("File %r already exists.", azipfile)
 			with zipfile.ZipFile(azipfile, "w") as myzip:
 				for attachment in attachments:
 					if isinstance(attachment, (tuple, list)):
@@ -2236,10 +2241,10 @@ def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, 
 			filename, file = attachment
 			size = len(file)
 			total += size
-			logging.debug("{0!r}: {1}".format(filename, outputunit(size)))
+			logging.debug("%r: %s", filename, outputunit(size))
 			aattachments.append((size, attachment))
 
-		logging.debug("Total Size: {0}".format(outputunit(total)))
+		logging.debug("Total Size: %s", outputunit(total))
 
 		if total >= 25 * 1024 * 1024:
 			logging.warning("The total size of all attachments is greater than 25 MiB.")
@@ -2248,7 +2253,7 @@ def send_msg(subject, message="", attachments=None, to=None, cc=None, bcc=None, 
 				filename, _ = attachment
 				total += size
 				if total >= 25 * 1024 * 1024:
-					logging.info("Skipping attachment: {0!r}".format(filename))
+					logging.info("Skipping attachment: %r", filename)
 					message += "(Unable to attach the {0!r} file ({1}), as the total message size would be too large.)\n".format(
 						filename, outputunit(size)
 					)
@@ -2595,26 +2600,26 @@ def send_request(guid, args):
 			args["sh"] = "ABCDABCDABCDABCDABCDABCDABCDABCD"
 		else:
 			secure_v5_url(guid, args)
-	# logging.debug("Args: {0}".format(args))
+	# logging.debug("Args: %s", args)
 	try:
 		r = session.get(primenet_v5_burl, params=args, timeout=180)
 		# logging.debug("URL: " + r.url)
 		r.raise_for_status()
 		text = r.text
 	except Timeout as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		return None
 	except HTTPError as e:
-		logging.exception("ERROR receiving answer to request: {0}".format(e), exc_info=options.debug)
+		logging.exception("ERROR receiving answer to request: %s", e, exc_info=options.debug)
 		return None
 	except ConnectionError as e:
-		logging.exception("ERROR connecting to server for request: {0}".format(e), exc_info=options.debug)
+		logging.exception("ERROR connecting to server for request: %s", e, exc_info=options.debug)
 		return None
 
 	result = parse_v5_resp(text)
 	# logging.debug("RESPONSE:\n" + text)
 	if "pnErrorResult" not in result:
-		logging.error("PnErrorResult value missing.  Full response was:\n" + text)
+		logging.error("PnErrorResult value missing.  Full response was:\n%s", text)
 		return None
 	if "pnErrorDetail" not in result:
 		logging.error("PnErrorDetail string missing")
@@ -2623,17 +2628,17 @@ def send_request(guid, args):
 	if rc:
 		resmsg = ERRORS.get(rc, "Unknown error code")
 		if args["t"] == "ga" and args.get("cert"):
-			logging.debug("PrimeNet error {0}: {1}".format(rc, resmsg))
+			logging.debug("PrimeNet error %s: %s", rc, resmsg)
 			logging.debug(result["pnErrorDetail"])
 		else:
-			logging.error("PrimeNet error {0}: {1}".format(rc, resmsg))
+			logging.error("PrimeNet error %s: %s", rc, resmsg)
 			logging.error(result["pnErrorDetail"])
 	elif result["pnErrorDetail"] != "SUCCESS":
 		if result["pnErrorDetail"].count("\n"):
 			logging.info("PrimeNet success code with additional info:")
 			logging.info(result["pnErrorDetail"])
 		else:
-			logging.info("PrimeNet success code with additional info: {0}".format(result["pnErrorDetail"]))
+			logging.info("PrimeNet success code with additional info: %s", result["pnErrorDetail"])
 
 	return result
 
@@ -2646,7 +2651,7 @@ def get_exponent(n):
 		r.raise_for_status()
 		result = r.json()
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		return None
 
 	return result
@@ -3239,11 +3244,11 @@ def parse_work_unit_mlucas(adapter, filename, exponent, astage):
 				#     _psmall = from_bytes(tmp[-1:])
 				stage = "S{0}".format(astage)
 			else:
-				adapter.debug("savefile with unknown TEST_TYPE = {0}".format(t))
+				adapter.debug("savefile with unknown TEST_TYPE = %s", t)
 				return None
 
 			if m != MODULUS_TYPE_MERSENNE:
-				adapter.debug("savefile with unknown MODULUS_TYPE = {0}".format(m))
+				adapter.debug("savefile with unknown MODULUS_TYPE = %s", m)
 				return None
 
 			if kblocks is not None:
@@ -3251,7 +3256,7 @@ def parse_work_unit_mlucas(adapter, filename, exponent, astage):
 	except EOFError:
 		return None
 	except (IOError, OSError) as e:
-		logging.exception("Error reading {0!r} file: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", filename, e, exc_info=options.debug)
 		return None
 
 	return counter, stage, pct_complete, fftlen
@@ -3267,10 +3272,10 @@ def parse_work_unit_cudalucas(adapter, filename, p):
 
 			q, n, j, _offset, total_time, _time_adj, _iter_adj, _, magic_number, _checksum = unpack("=IIIIIIIIII", f)
 			if p != q:
-				adapter.debug("Error: Expecting the exponent {0}, but found {1}".format(p, q))
+				adapter.debug("Error: Expecting the exponent %s, but found %s", p, q)
 				return None
 			if magic_number:
-				adapter.debug("Error: savefile with unknown magic_number = {0}".format(magic_number))
+				adapter.debug("Error: savefile with unknown magic_number = %s", magic_number)
 				return None
 			total_time <<= 15
 			# _time_adj <<= 15
@@ -3283,7 +3288,7 @@ def parse_work_unit_cudalucas(adapter, filename, p):
 	except EOFError:
 		return None
 	except (IOError, OSError) as e:
-		logging.exception("Error reading {0!r} file: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", filename, e, exc_info=options.debug)
 		return None
 
 	return counter, avg_msec_per_iter, stage, pct_complete, fftlen
@@ -3346,7 +3351,7 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 		with open(filename, "rb") as f:
 			header = f.readline().rstrip(b"\n")
 	except (IOError, OSError) as e:
-		logging.exception("Error reading {0!r} file: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", filename, e, exc_info=options.debug)
 		return None
 
 	if not header.startswith(b"OWL "):
@@ -3366,7 +3371,7 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 		elif ll_v1:
 			_version, exponent, iteration, _ahash = ll_v1.groups()
 		else:
-			adapter.debug("LL savefile with unknown version: {0!r}".format(header))
+			adapter.debug("LL savefile with unknown version: %r", header)
 			return None
 
 		counter = int(iteration)
@@ -3394,7 +3399,7 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 		elif prp_v9:
 			_version, exponent, iteration, _block_size, _res64 = prp_v9.groups()
 		else:
-			adapter.debug("PRP savefile with unknown version: {0!r}".format(header))
+			adapter.debug("PRP savefile with unknown version: %r", header)
 			return None
 
 		counter = int(iteration)
@@ -3423,7 +3428,7 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 			_version, exponent, _B1, _crc = p1final_v1.groups()
 			pct_complete = 1.0
 		else:
-			adapter.debug("P-1 stage 1 savefile with unknown version: {0!r}".format(header))
+			adapter.debug("P-1 stage 1 savefile with unknown version: %r", header)
 			return None
 
 		# B_done = int(B1)
@@ -3445,14 +3450,14 @@ def parse_work_unit_gpuowl(adapter, filename, p):
 			buffs = 2880
 			pct_complete = counter / buffs
 		else:
-			adapter.debug("P-1 stage 2 savefile with unknown version: {0}".format(header))
+			adapter.debug("P-1 stage 2 savefile with unknown version: %r", header)
 			return None
 
 		# B_done = int(B1)
 		# C_done = int(B2)
 		stage = "S2"
 	else:
-		adapter.debug("Error: Unknown save/checkpoint file header: {0!r}".format(header))
+		adapter.debug("Error: Unknown save/checkpoint file header: %r", header)
 		return None
 
 	if p != int(exponent):
@@ -3531,7 +3536,7 @@ def parse_work_unit_mfaktc(filename, p):
 		with open(filename, "rb") as f:
 			header = f.readline().rstrip(b"\n")
 	except (IOError, OSError) as e:
-		logging.exception("Error reading {0!r} file: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", filename, e, exc_info=options.debug)
 		return None
 
 	mfaktc_tf = MFAKTC_TF_RE.match(header)
@@ -3568,7 +3573,7 @@ def parse_work_unit_mfakto(filename, p):
 		with open(filename, "rb") as f:
 			header = f.readline().rstrip(b"\n")
 	except (IOError, OSError) as e:
-		logging.exception("Error reading {0!r} file: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Error reading %r file: %s", filename, e, exc_info=options.debug)
 		return None
 
 	mfakto_tf = MFAKTO_TF_RE.match(header)
@@ -3600,7 +3605,7 @@ def get_stages_mfaktx_ini(adapter, adir):
 	stages = 1
 	ini_file = os.path.join(adir, "mfaktc.ini" if options.mfaktc else "mfakto.ini")
 	if not os.path.exists(ini_file):
-		adapter.debug("Configuration file {0!r} does not exist".format(ini_file))
+		adapter.debug("Configuration file %r does not exist", ini_file)
 		return stages
 	config = ConfigParser()
 	try:
@@ -3614,7 +3619,7 @@ def get_stages_mfaktx_ini(adapter, adir):
 					stream.seek(0)
 					config.readfp(stream)
 	except ConfigParserError as e:
-		adapter.exception("Error reading {0!r} configuration file: {1}".format(ini_file, e), exc_info=options.debug)
+		adapter.exception("Error reading %r configuration file: %s", ini_file, e, exc_info=options.debug)
 	if config.has_option("default", "Stages"):
 		stages = config.getint("default", "Stages")
 	return stages
@@ -3641,11 +3646,11 @@ def parse_stat_file(adapter, adir, p):
 			iteration, stage, pct_complete, fftlen = result
 			break
 	else:
-		adapter.debug("No save/checkpoint files found for the exponent {0}".format(p))
+		adapter.debug("No save/checkpoint files found for the exponent %s", p)
 
 	statfile = os.path.join(adir, "p{0}.stat".format(p))
 	if not os.path.exists(statfile):
-		adapter.debug("stat file {0!r} does not exist".format(statfile))
+		adapter.debug("stat file %r does not exist", statfile)
 		return iteration, None, stage, pct_complete, fftlen, 0, 0
 
 	w = readonly_list_file(statfile)  # appended line by line, no lock needed
@@ -3709,7 +3714,7 @@ def parse_cuda_output_file(adapter, adir, p):
 		if result is not None:
 			iteration, avg_msec_per_iter, stage, pct_complete, fftlen = result
 	else:
-		adapter.debug("Save/Checkpoint file {0!r} does not exist".format(savefile))
+		adapter.debug("Save/Checkpoint file %r does not exist", savefile)
 
 	return iteration, avg_msec_per_iter, stage, pct_complete, fftlen, bits, buffs
 
@@ -3745,12 +3750,12 @@ def parse_gpu_log_file(adapter, adir, p):
 				return iteration, avg_msec_per_iter, stage, pct_complete, fftlen, bits, buffs
 			break
 	else:
-		adapter.debug("No save/checkpoint files found for the exponent {0}".format(p))
+		adapter.debug("No save/checkpoint files found for the exponent %s", p)
 
 	# appended line by line, no lock needed
 	logfile = os.path.join(adir, "gpuowl.log")
 	if not os.path.exists(logfile):
-		adapter.debug("Log file {0!r} does not exist".format(logfile))
+		adapter.debug("Log file %r does not exist", logfile)
 		return iteration, None, stage, pct_complete, fftlen, 0, 0
 
 	w = readonly_list_file(logfile)
@@ -3780,7 +3785,7 @@ def parse_gpu_log_file(adapter, adir, p):
 			num = int(res.group(1) if res else ares.group(1))
 			if num != p:
 				if not found:
-					adapter.debug("Looking for the exponent {0}, but found {1}".format(p, num))
+					adapter.debug("Looking for the exponent %s, but found %s", p, num)
 				break
 		if p2_res:
 			found += 1
@@ -3858,7 +3863,7 @@ def parse_mfaktc_output_file(adir, p):
 		if result is not None:
 			iteration, avg_msec_per_iter, pct_complete = result
 	# else:
-	#     adapter.debug("Checkpoint file {0!r} does not exist".format(savefile))
+	#     adapter.debug("Checkpoint file %r does not exist", savefile)
 
 	return iteration, avg_msec_per_iter, stage, pct_complete, None, 0, 0
 
@@ -3874,7 +3879,7 @@ def parse_mfakto_output_file(adir, p):
 		if result is not None:
 			iteration, avg_msec_per_iter, pct_complete = result
 	# else:
-	#     adapter.debug("Checkpoint file {0!r} does not exist".format(savefile))
+	#     adapter.debug("Checkpoint file %r does not exist", savefile)
 
 	return iteration, avg_msec_per_iter, stage, pct_complete, None, 0, 0
 
@@ -4040,12 +4045,12 @@ def adjust_rolling_average(dirs):
 				pct = delta / (30 * 24 * 60 * 60)
 				rolling_average = int((1.0 - pct) * rolling_average + pct * arolling_average + 0.5)
 				logging.info(
-					"Updating 30-day rolling average to {0} (using {1:%} of {2})".format(rolling_average, pct, arolling_average)
+					"Updating 30-day rolling average to %s (using %s of %s)", rolling_average, format(pct, "%"), arolling_average
 				)
 
 				rolling_average = min(4000, max(20, rolling_average))
 			else:
-				logging.debug("The rolling average is too large ({0} > 50000), not updating 30-day value".format(arolling_average))
+				logging.debug("The rolling average is too large (%s > 50000), not updating 30-day value", arolling_average)
 		else:
 			logging.debug("The workfile was modified, not updating rolling average")
 
@@ -4063,7 +4068,7 @@ def output_status(dirs, cpu_num=None):
 	adapter = logging.LoggerAdapter(logger, None)
 	for i, adir in enumerate(dirs):
 		if options.status and options.num_workers > 1:
-			logging.info("[Worker #{0:n}]".format(i + 1))
+			logging.info("[Worker #%s]", i + 1)
 		tasks = read_workfile(adapter, adir)
 		assignments = OrderedDict(
 			((assignment.uid, assignment.n), assignment) for assignment in tasks if isinstance(assignment, Assignment)
@@ -4134,24 +4139,28 @@ def output_status(dirs, cpu_num=None):
 				"/known_factors" if assignment.work_type == PRIMENET.WORK_TYPE_PRP and assignment.known_factors else ""
 			)
 			if time_left is None:
-				adapter.info("{0}, {1}, Finish cannot be estimated".format(buf, work_type_str))
+				adapter.info("%s, %s, Finish cannot be estimated", buf, work_type_str)
 			else:
 				cur_time_left += time_left
 				time_left = timedelta(seconds=cur_time_left)
-				adapter.info("{0}, {1}, {2} ({3:%c})".format(buf, work_type_str, time_left, now + time_left))
+				adapter.info("%s, %s, %s (%s)", buf, work_type_str, time_left, (now + time_left).strftime("%c"))
 			if all_and_prp_cnt:
 				ll_and_prp_cnt += 1
 				adapter.info(
-					"The chance that the exponent ({0}) you are testing will yield a {1}prime is about 1 in {2:n} ({3:%}).".format(
-						assignment.n, "Mersenne " if amersennes else "", int(1.0 / aprob), aprob
-					)
+					"The chance that the exponent (%s) you are testing will yield a %sprime is about 1 in %s (%s).",
+					assignment.n,
+					"Mersenne " if amersennes else "",
+					format(int(1.0 / aprob), "n"),
+					format(aprob, "%"),
 				)
 			digits(assignment)
 	if ll_and_prp_cnt > 1:
 		logging.info(
-			"The chance that one of the {0:n} exponents you are testing will yield a {1}prime is about 1 in {2:n} ({3:%}).".format(
-				ll_and_prp_cnt, "Mersenne " if mersennes else "", int(1.0 / prob), prob
-			)
+			"The chance that one of the %s exponents you are testing will yield a %sprime is about 1 in %s (%s).",
+			ll_and_prp_cnt,
+			"Mersenne " if mersennes else "",
+			format(int(1.0 / prob), "n"),
+			format(prob, "%"),
 		)
 
 
@@ -4175,16 +4184,18 @@ def check_disk_space(dirs):
 		disk_space = min(usage.total, worker_disk_space * options.num_workers)
 		usages = [get_disk_usage(adir) for adir in dirs]
 		total = sum(usages)
-		logging.debug("Disk space limit usage: {0}".format(output_available(total, disk_space)))
+		logging.debug("Disk space limit usage: %s", output_available(total, disk_space))
 		precent = total / disk_space
 		critical = (
 			config.getfloat(SEC.PrimeNet, "disk_usage_critical") if config.has_option(SEC.PrimeNet, "disk_usage_critical") else 90
 		)
 		if precent * 100 >= critical:
 			logging.warning(
-				"Greater than {0}% or {1:%} of the configured disk space limit used ({2}B / {3}B)".format(
-					critical, precent, outputunit(total), outputunit(disk_space)
-				)
+				"Greater than %s%% or %s of the configured disk space limit used (%sB / %sB)",
+				critical,
+				format(precent, "%"),
+				outputunit(total),
+				outputunit(disk_space),
 			)
 			if not config.has_option(SEC.PrimeNet, "storage_usage_critical"):
 				send_msg(
@@ -4211,7 +4222,7 @@ Total limit usage: {7}
 		else:
 			config.remove_option(SEC.PrimeNet, "storage_usage_critical")
 
-	logging.debug("Disk space available: {0}".format(output_available(usage.free, usage.total)))
+	logging.debug("Disk space available: %s", output_available(usage.free, usage.total))
 	precent = usage.free / usage.total
 	critical = (
 		config.getfloat(SEC.PrimeNet, "disk_available_critical")
@@ -4220,9 +4231,11 @@ Total limit usage: {7}
 	)
 	if precent * 100 <= critical:
 		logging.warning(
-			"Less than {0}% or only {1:%} of the total disk space available ({2}B / {3}B)".format(
-				critical, precent, outputunit(usage.free), outputunit(usage.total)
-			)
+			"Less than %s%% or only %s of the total disk space available (%sB / %sB)",
+			critical,
+			format(precent, "%"),
+			outputunit(usage.free),
+			outputunit(usage.total),
 		)
 		if not config.has_option(SEC.PrimeNet, "storage_available_critical"):
 			send_msg(
@@ -4290,22 +4303,23 @@ def upload_proof(adapter, filename):
 				return False
 			proof_number = PROOF_NUMBER_RE.match(number)
 			if not proof_number:
-				logging.error("Error parsing number: {0!r}".format(number))
+				logging.error("Error parsing number: %r", number)
 				return False
 			_, number, exponent, _k, _b, _n, _c, _factors = proof_number.groups()
 			if not exponent or not number.startswith(b"M"):
 				logging.error("Only proof files for Mersenne numbers are supported")
 				return False
 			exponent = int(exponent)
-			adapter.info("Proof file exponent is {0}".format(exponent))
+			adapter.info("Proof file exponent is %s", exponent)
 			filesize = os.path.getsize(filename)
 			adapter.info(
-				"Filesize of {0!r} is {1}B{2}".format(
-					filename, outputunit(filesize), " ({0}B)".format(outputunit(filesize, True)) if filesize >= 1000 else ""
-				)
+				"Filesize of %r is %sB%s",
+				filename,
+				outputunit(filesize),
+				" ({0}B)".format(outputunit(filesize, True)) if filesize >= 1000 else "",
 			)
 			fileHash = checksum_md5(filename)
-			adapter.info("MD5 of {0!r} is {1}".format(filename, fileHash))
+			adapter.info("MD5 of %r is %s", filename, fileHash)
 
 			while True:
 				r = session.get(
@@ -4316,32 +4330,32 @@ def upload_proof(adapter, filename):
 				result = r.json()
 				if "error_status" in result:
 					if result["error_status"] == 409:
-						adapter.error("Proof {0!r} already uploaded".format(filename))
-						adapter.error(str(result))
+						adapter.error("Proof %r already uploaded", filename)
+						adapter.error("%s", result)
 						return True
-					adapter.error("Unexpected error during {0!r} upload".format(filename))
-					adapter.error(str(result))
+					adapter.error("Unexpected error during %r upload", filename)
+					adapter.error("%s", result)
 					return False
 				r.raise_for_status()
 				if "URLToUse" not in result:
-					adapter.error("For proof {0!r}, server response missing URLToUse:".format(filename))
-					adapter.error(str(result))
+					adapter.error("For proof %r, server response missing URLToUse:", filename)
+					adapter.error("%s", result)
 					return False
 				if "need" not in result:
-					adapter.error("For proof {0!r}, server response missing need list:".format(filename))
-					adapter.error(str(result))
+					adapter.error("For proof %r, server response missing need list:", filename)
+					adapter.error("%s", result)
 					return False
 
 				origUrl = result["URLToUse"]
 				baseUrl = "https" + origUrl[4:] if origUrl.startswith("http:") else origUrl
 				pos, end = next((int(a), b) for a, b in result["need"].items())
 				if pos > end or end >= filesize:
-					adapter.error("For proof {0!r}, need list entry bad:".format(filename))
-					adapter.error(str(result))
+					adapter.error("For proof %r, need list entry bad:", filename)
+					adapter.error("%s", result)
 					return False
 
 				if pos:
-					adapter.info("Resuming from offset {0:n}".format(pos))
+					adapter.info("Resuming from offset %s", pos)
 
 				bytessent = 0
 				while pos < end:
@@ -4357,42 +4371,41 @@ def upload_proof(adapter, filename):
 					)
 					result = response.json()
 					if "error_status" in result:
-						adapter.error("Unexpected error during {0!r} upload".format(filename))
-						adapter.error(str(result))
+						adapter.error("Unexpected error during %r upload", filename)
+						adapter.error("%s", result)
 						return False
 					response.raise_for_status()
 					if "FileUploaded" in result:
-						adapter.info("Proof file {0!r} successfully uploaded".format(filename))
+						adapter.info("Proof file %r successfully uploaded", filename)
 						endtime = timeit.default_timer()
 						totaltime = endtime - starttime
 						adapter.info(
-							"Uploaded {0}B{1} in {2}, {3}B/sec".format(
-								outputunit(bytessent),
-								" ({0}B)".format(outputunit(bytessent, True)) if bytessent >= 1000 else "",
-								timedelta(seconds=totaltime),
-								outputunit(bytessent / totaltime),
-							)
+							"Uploaded %sB%s in %s, %sB/sec",
+							outputunit(bytessent),
+							" ({0}B)".format(outputunit(bytessent, True)) if bytessent >= 1000 else "",
+							timedelta(seconds=totaltime),
+							outputunit(bytessent / totaltime),
 						)
 						return True
 					if "need" not in result:
-						adapter.error("For proof {0!r}, no entries in need list:".format(filename))
-						adapter.error(str(result))
+						adapter.error("For proof %r, no entries in need list:", filename)
+						adapter.error("%s", result)
 						return False
 					start, end = next((int(a), b) for a, b in result["need"].items())
 					if start <= pos:
-						adapter.error("For proof {0!r}, sending data did not advance need list:".format(filename))
-						adapter.error(str(result))
+						adapter.error("For proof %r, sending data did not advance need list:", filename)
+						adapter.error("%s", result)
 						return False
 					pos = start
 					if pos > end or end >= filesize:
-						adapter.error("For proof {0!r}, need list entry bad:".format(filename))
-						adapter.error(str(result))
+						adapter.error("For proof %r, need list entry bad:", filename)
+						adapter.error("%s", result)
 						return False
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		return False
 	except (IOError, OSError) as e:
-		logging.exception("Cannot open proof file {0!r}: {1}".format(filename, e), exc_info=options.debug)
+		logging.exception("Cannot open proof file %r: %s", filename, e, exc_info=options.debug)
 		return False
 
 
@@ -4402,7 +4415,7 @@ def upload_proofs(adapter, adir, cpu_num):
 		return
 	proof = os.path.join(adir, "proof")
 	if not os.path.isdir(proof):
-		adapter.debug("Proof directory {0!r} does not exist".format(proof))
+		adapter.debug("Proof directory %r does not exist", proof)
 		return
 	entries = glob.glob(os.path.join(proof, "*.proof"))
 	if not entries:
@@ -4496,7 +4509,7 @@ def program_options(send=False, start=-1, retry_count=0):
 				w = int(result["w"])
 				aw = next(key for key, value in CONVERT_DICT.items() if value == w) if w in CONVERT_DICT.values() else w
 				if aw not in SUPPORTED:
-					logging.error("Unsupported worktype = {0} for {1}".format(aw, PROGRAM["name"]))
+					logging.error("Unsupported worktype = %s for %s", aw, PROGRAM["name"])
 					sys.exit(1)
 				if tnum < 0:
 					for i in range(options.num_workers):
@@ -4596,20 +4609,32 @@ def register_instance(guid=None):
 		program_options()
 	config_write(config)
 	logging.info(
-		"""GUID {guid} correctly registered with the following features:
-Username: {0.user_id}
-Computer name: {0.computer_id}
-CPU/GPU model: {0.cpu_brand}
-CPU features: {0.cpu_features}
-CPU L1 Cache size: {0.cpu_l1_cache_size:n} KiB
-CPU L2 Cache size: {0.cpu_l2_cache_size:n} KiB
-CPU cores: {0.num_cores:n}
-CPU threads per core: {0.cpu_hyperthreads:n}
-CPU/GPU frequency/speed: {0.cpu_speed:n} MHz
-Total RAM: {0.memory:n} MiB
+		"""GUID %s correctly registered with the following features:
+Username: %s
+Computer name: %s
+CPU/GPU model: %s
+CPU features: %s
+CPU L1 Cache size: %s KiB
+CPU L2 Cache size: %s KiB
+CPU cores: %s
+CPU threads per core: %s
+CPU/GPU frequency/speed: %s MHz
+Total RAM: %s MiB
 To change these values, please rerun the program with different options
 You can see the result in this page:
-https://www.mersenne.org/editcpu/?g={guid}""".format(options, guid=guid)
+https://www.mersenne.org/editcpu/?g=%s""",
+		guid,
+		options.user_id,
+		options.computer_id,
+		options.cpu_brand,
+		options.cpu_features,
+		options.cpu_l1_cache_size,
+		options.cpu_l2_cache_size,
+		options.num_cores,
+		options.cpu_hyperthreads,
+		options.cpu_speed,
+		options.memory,
+		guid,
 	)
 
 
@@ -4626,7 +4651,7 @@ def assignment_unreserve(adapter, assignment, retry_count=0):
 	args["g"] = guid
 	args["k"] = assignment.uid
 	retry = False
-	adapter.info("Unreserving {0}".format(exponent_to_str(assignment)))
+	adapter.info("Unreserving %s", exponent_to_str(assignment))
 	result = send_request(guid, args)
 	if result is None:
 		retry = True
@@ -4673,7 +4698,7 @@ def unreserve(dirs, p):
 					write_workfile(adir, tasks)
 				break
 	else:
-		logging.error("Error unreserving exponent: {0} not found in workfile{1}".format(p, "s" if len(dirs) != 1 else ""))
+		logging.error("Error unreserving exponent: %s not found in workfile%s", p, "s" if len(dirs) != 1 else "")
 
 
 def get_proof_data(adapter, assignment_aid, file):
@@ -4695,17 +4720,16 @@ def get_proof_data(adapter, assignment_aid, file):
 			if chunk:
 				file.write(chunk)
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		return None
 	endtime = timeit.default_timer()
 	totaltime = endtime - starttime
 	adapter.info(
-		"Downloaded {0}B{1} in {2}, {3}B/sec".format(
-			outputunit(length),
-			" ({0}B)".format(outputunit(length, True)) if length >= 1000 else "",
-			timedelta(seconds=totaltime),
-			outputunit(length / totaltime),
-		)
+		"Downloaded %sB%s in %s, %sB/sec",
+		outputunit(length),
+		" ({0}B)".format(outputunit(length, True)) if length >= 1000 else "",
+		timedelta(seconds=totaltime),
+		outputunit(length / totaltime),
 	)
 	return amd5
 
@@ -4715,7 +4739,7 @@ IS_HEX_RE = re.compile(br"^[0-9a-fA-F]*$")  # string.hexdigits
 
 def download_cert(adapter, adir, filename, assignment):
 	"""Downloads and verifies the certification starting value for a given assignment."""
-	adapter.info("Downloading CERT starting value for {0} to {1!r}".format(exponent_to_str(assignment), filename))
+	adapter.info("Downloading CERT starting value for %s to %r", exponent_to_str(assignment), filename)
 	with tempfile.NamedTemporaryFile("wb", dir=adir, delete=False) as f:
 		amd5 = get_proof_data(adapter, assignment.uid, f)
 	if not amd5 or not IS_HEX_RE.match(amd5):
@@ -4725,11 +4749,11 @@ def download_cert(adapter, adir, filename, assignment):
 	amd5 = amd5.decode("utf-8").upper()
 	residue_md5 = checksum_md5(f.name).upper()
 	if amd5 != residue_md5:
-		adapter.error("MD5 of downloaded starting value {0} does not match {1}".format(residue_md5, amd5))
+		adapter.error("MD5 of downloaded starting value %s does not match %s", residue_md5, amd5)
 		os.remove(f.name)
 		return False
 	os.rename(f.name, filename)
-	adapter.info("CERT starting value {0!r} successfully downloaded".format(filename))
+	adapter.info("CERT starting value %r successfully downloaded", filename)
 	return True
 
 
@@ -4747,7 +4771,7 @@ def download_certs(adapter, adir, tasks):
 					if echk < 8:
 						adapter.info("Will retry downloading CERT later")
 					else:
-						adapter.info("Abandoning CERT of M{0}".format(assignment.n))
+						adapter.info("Abandoning CERT of M%s", assignment.n)
 						unreserve([adir], assignment.n)
 						config.remove_option(SEC.Internals, "CertErrorCount")
 
@@ -4821,10 +4845,10 @@ def get_assignment(
 		PRIMENET.WORK_TYPE_FIRST_LL,
 		PRIMENET.WORK_TYPE_DBLCHK,
 	}:
-		adapter.error("Server sent bad exponent: {0}.".format(assignment.n))
+		adapter.error("Server sent bad exponent: %s.", assignment.n)
 		return None
 	if assignment.work_type not in supported:
-		adapter.error("Returned assignment from server is not a supported worktype {0}.".format(assignment.work_type))
+		adapter.error("Returned assignment from server is not a supported worktype %s.", assignment.work_type)
 		# TODO: Unreserve assignment
 		# assignment_unreserve()
 		# return None
@@ -4852,9 +4876,9 @@ def get_assignment(
 				# Mlucas
 				if not (options.cudalucas or options.gpuowl):
 					if assignment.prp_base != 3:
-						adapter.error("PRP base ({0}) is not 3".format(assignment.prp_base))
+						adapter.error("PRP base (%s) is not 3", assignment.prp_base)
 					if assignment.prp_residue_type not in {1, 5}:
-						adapter.error("PRP residue type ({0}) is not 1 or 5".format(assignment.prp_residue_type))
+						adapter.error("PRP residue type (%s) is not 1 or 5", assignment.prp_residue_type)
 					# TODO: Unreserve assignment
 					# assignment_unreserve()
 		if "kf" in r:
@@ -4898,9 +4922,9 @@ def get_assignment(
 		assignment.c = int(r["c"])
 		assignment.cert_squarings = int(r["ns"])
 	else:
-		adapter.error("Received unknown worktype: {0}.".format(assignment.work_type))
+		adapter.error("Received unknown worktype: %s.", assignment.work_type)
 		sys.exit(1)
-	adapter.info("Got assignment {0}: {1}".format(assignment.uid, exponent_to_text(assignment)))
+	adapter.info("Got assignment %s: %s", assignment.uid, exponent_to_text(assignment))
 	return assignment
 
 
@@ -4917,9 +4941,7 @@ def get_cert_work(adapter, adir, cpu_num, current_time, progress, tasks):
 	workfile = os.path.join(adir, options.worktodo_file)
 	if cert_assignments >= max_cert_assignments:
 		adapter.debug(
-			"{0:n} ≥ {1:n} CERT assignments already in {2!r}, not getting new work".format(
-				cert_assignments, max_cert_assignments, workfile
-			)
+			"%s ≥ %s CERT assignments already in %r, not getting new work", cert_assignments, max_cert_assignments, workfile
 		)
 		return
 
@@ -4963,11 +4985,11 @@ def get_cert_work(adapter, adir, cpu_num, current_time, progress, tasks):
 		if test is None:
 			break
 		if test.work_type != PRIMENET.WORK_TYPE_CERT:
-			adapter.error("Received unknown work type (expected 200): {0}".format(test.work_type))
+			adapter.error("Received unknown work type (expected 200): %s", test.work_type)
 			break
 		tasks.appendleft(test)  # append
 		new_task = output_assignment(test)
-		adapter.debug("New assignment: {0!r}".format(new_task))
+		adapter.debug("New assignment: %r", new_task)
 		changed = True  # file.write(new_task + "\n")
 
 		# TODO: Something better here
@@ -5028,7 +5050,7 @@ def cuda_result_to_json(resultsfile, sendline):
 			if brent_suyama > 2:
 				ar["brent-suyama"] = brent_suyama
 	else:
-		logging.error("Unable to parse entry in {0!r}: {1}".format(resultsfile, sendline))
+		logging.error("Unable to parse entry in %r: %s", resultsfile, sendline)
 		return None
 
 	ar["exponent"] = int(exponent)
@@ -5181,7 +5203,7 @@ def report_result(adapter, ar, message, assignment, result_type, tasks, retry_co
 def submit_mersenne_ca_results(adapter, lines, retry_count=0):
 	"""Submit results for exponents over 1,000,000,000 using https://www.mersenne.ca/submit-results.php."""
 	length = len(lines)
-	adapter.info("Submitting {0:n} results to mersenne.ca".format(length))
+	adapter.info("Submitting %s results to mersenne.ca", length)
 	retry = rejected = False
 	try:
 		r = session.post(
@@ -5194,34 +5216,32 @@ def submit_mersenne_ca_results(adapter, lines, retry_count=0):
 		r.raise_for_status()
 		result = r.json()
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		retry = True
 	else:
 		adapter.info("mersenne.ca response:")
 		adapter.info(result["user_message"])
 		results = result["results"]
 		if results["unknown"]:
-			adapter.error("Unknown {0:n} result{1}.".format(results["unknown"], "s" if results["unknown"] != 1 else ""))
+			adapter.error("Unknown %s result%s.", results["unknown"], "s" if results["unknown"] != 1 else "")
 		if results["rejected"]:
 			rejected = result["lines"]["rejected"]
 			adapter.error(
-				"Rejected {0:n} result{1}: {2}".format(
-					results["rejected"],
-					"s" if results["rejected"] != 1 else "",
-					", ".join(
-						"{0} ({1:n} result{2})".format(reason, len(lines), "s" if len(lines) != 1 else "")
-						for reason, lines in rejected.items()
-					),
-				)
+				"Rejected %s result%s: %s",
+				results["rejected"],
+				"s" if results["rejected"] != 1 else "",
+				", ".join(
+					"{0} ({1:n} result{2})".format(reason, len(lines), "s" if len(lines) != 1 else "")
+					for reason, lines in rejected.items()
+				),
 			)
 		accepted = sum(results["accepted"].values())
-		adapter.info("Submitted {0:n} result{1} to mersenne.ca.".format(accepted, "s" if accepted != 1 else ""))
+		adapter.info("Submitted %s result%s to mersenne.ca.", accepted, "s" if accepted != 1 else "")
 		factors = results["factors"]["new"]
 		adapter.info(
-			"Total credit is {0:n} GHz-days{1}.".format(
-				sum(results["ghd"].values()),
-				", found {0:n} new factor{1}".format(factors, "s" if factors != 1 else "") if factors else "",
-			)
+			"Total credit is %s GHz-days%s.",
+			format(sum(results["ghd"].values()), "n"),
+			", found {0:n} new factor{1}".format(factors, "s" if factors != 1 else "") if factors else "",
 		)
 	if retry:
 		if retry_count >= 2:
@@ -5253,7 +5273,7 @@ def parse_result(adapter, adir, resultsfile, sendline):
 		try:
 			ar = json.loads(sendline)
 		except JSONDecodeError as e:
-			adapter.exception("Unable to decode entry in {0!r}: {1}".format(resultsfile, e), exc_info=options.debug)
+			adapter.exception("Unable to decode entry in %r: %s", resultsfile, e, exc_info=options.debug)
 			# Mlucas
 			if "Program: E" in sendline:
 				adapter.info("Please upgrade to Mlucas v19 or greater.")
@@ -5261,7 +5281,7 @@ def parse_result(adapter, adir, resultsfile, sendline):
 
 	program = ar["program"]
 	aprogram = "{0} {1}".format(program["name"], program["version"])
-	# adapter.debug("Program: {0}".format(aprogram))
+	# adapter.debug("Program: %s", aprogram)
 	config.set(SEC.Internals, "program", aprogram)
 
 	user = ar.setdefault("user", options.user_id)
@@ -5297,7 +5317,7 @@ def parse_result(adapter, adir, resultsfile, sendline):
 	elif worktype in {"Cert", "CERT"}:
 		result_type = PRIMENET.AR_CERT
 	else:
-		adapter.error("Unsupported worktype {0}".format(worktype))
+		adapter.error("Unsupported worktype %s", worktype)
 		return None
 
 	buf = "" if not user else "UID: {0}, ".format(user) if not computer else "UID: {0}/{1}, ".format(user, computer)
@@ -5400,9 +5420,9 @@ def parse_result(adapter, adir, resultsfile, sendline):
 				)
 				text = r.text
 			except RequestException as e:
-				logging.exception("Backup notification failed: {0}".format(e), exc_info=options.debug)
+				logging.exception("Backup notification failed: %s", e, exc_info=options.debug)
 			else:
-				adapter.debug("Backup notification: {0}".format(text))
+				adapter.debug("Backup notification: %s", text)
 			if result_type == PRIMENET.AR_LL_PRIME:
 				subject = "‼️ New Mersenne Prime!!! {0} is prime!".format(string_rep)
 				temp = "Mersenne"
@@ -5488,21 +5508,23 @@ Python version: {16}
 			)
 
 	if not no_report:
-		adapter.debug("Sending result: {0!r}".format(sendline))
-		adapter.info("Sending result to server: {0}".format(buf))
+		adapter.debug("Sending result: %r", sendline)
+		adapter.info("Sending result to server: %s", buf)
 
 	if result_type in {PRIMENET.AR_TF_FACTOR, PRIMENET.AR_P1_FACTOR}:
 		for factor in map(int, ar["factors"]):
 			adapter.info(
-				"The {0} factor {1} has {2:n} decimal digits and {3:.6n} bits".format(
-					"prime" if is_prime(factor) else "composite", factor, len(str(factor)), log2(factor)
-				)
+				"The %s factor %s has %s decimal digits and %g bits",
+				"prime" if is_prime(factor) else "composite",
+				factor,
+				len(str(factor)),
+				log2(factor),
 			)
 			if result_type == PRIMENET.AR_TF_FACTOR:
 				if pow(2, assignment.n, factor) - 1:
-					adapter.warning("Bad factor for M{0} found: {1}".format(assignment.n, factor))
+					adapter.warning("Bad factor for M%s found: %s", assignment.n, factor)
 			elif (int(assignment.k) * pow(assignment.b, assignment.n, factor) + assignment.c) % factor:
-				adapter.warning("Bad factor for {0} found: {1}".format(exponent_to_str(assignment), factor))
+				adapter.warning("Bad factor for %s found: %s", exponent_to_str(assignment), factor)
 
 	return ar, message, assignment, result_type, no_report
 
@@ -5527,10 +5549,10 @@ def submit_work(dirs, adapter, adir, cpu_num, tasks):
 		results_send = [line for line in results if RESULTPATTERN.search(line) and line not in results_sent]
 
 	if not results_send:
-		adapter.debug("No new results in {0!r}.".format(resultsfile))
+		adapter.debug("No new results in %r.", resultsfile)
 		return
 	length = len(results_send)
-	adapter.debug("Found {0:n} new result{1} to report in {2!r}".format(length, "s" if length != 1 else "", resultsfile))
+	adapter.debug("Found %s new result%s to report in %r", length, "s" if length != 1 else "", resultsfile)
 
 	# Only for new results, to be appended to results_sent
 	mersenne_ca_result_send = []
@@ -5582,8 +5604,8 @@ def submit_work(dirs, adapter, adir, cpu_num, tasks):
 						rolling_average_work_unit_complete(adapter, adir, cpu_num, tasks, assignment)
 
 		if accepted > 1:
-			adapter.info("Submitted {0:n} result{1} to mersenne.org.".format(accepted, "s" if accepted != 1 else ""))
-			adapter.info("Total credit is {0:n} GHz-days.".format(sum(ghzdays)))
+			adapter.info("Submitted %s result%s to mersenne.org.", accepted, "s" if accepted != 1 else "")
+			adapter.info("Total credit is %s GHz-days.", format(sum(ghzdays), "n"))
 
 		# send all mersenne.ca results at once, to minimize server overhead
 		if mersenne_ca_result_send:
@@ -5678,17 +5700,17 @@ def tf1g_unreserve_all(adapter, cpu_num, retry_count=0):
 		r.raise_for_status()
 		result = r.json()
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		retry = True
 	else:
 		if "error" in result:
-			adapter.error("Error during TF1G unreserve-all: {0}".format(result["error"]))
+			adapter.error("Error during TF1G unreserve-all: %s", result["error"])
 			return False
 		if "unreserved_count" in result:
-			adapter.info("Unreserved {0:n} exponents from TF1G.".format(result["unreserved_count"]))
+			adapter.info("Unreserved %s exponents from TF1G.", result["unreserved_count"])
 			return True
 		adapter.error("Error during TF1G unreserve-all, unexpected result:")
-		adapter.error(str(result))
+		adapter.error("%s", result)
 	if retry:
 		if retry_count >= 2:
 			adapter.info("Retry count exceeded.")
@@ -5769,21 +5791,28 @@ def update_assignment(adapter, cpu_num, assignment, task):
 				bound1 = actual["b1"] and int(actual["b1"])
 				bound2 = actual["b2"] and int(actual["b2"])
 				if bound1 and bound2:
-					adapter.debug("Existing P-1 bounds are B1={0:n}, B2={1:n}".format(bound1, bound2))
+					adapter.debug("Existing P-1 bounds are B1=%s, B2=%s", bound1, bound2)
 					prob1, prob2 = pm1(assignment.n, assignment.sieve_depth, bound1, bound2)
 					adapter.debug(
-						"Chance of finding a factor was an estimated {0:%} ({1:.3%} + {2:.3%})".format(prob1 + prob2, prob1, prob2)
+						"Chance of finding a factor was an estimated %s (%s + %s)",
+						format(prob1 + prob2, "%"),
+						format(prob1, ".3%"),
+						format(prob2, ".3%"),
 					)
 					_, (midB1, midB2), _ = walk(assignment.n, assignment.sieve_depth)
-					adapter.debug("Optimal P-1 bounds are B1={0:n}, B2={1:n}".format(midB1, midB2))
+					adapter.debug("Optimal P-1 bounds are B1=%s, B2=%s", midB1, midB2)
 					p1, p2 = pm1(assignment.n, assignment.sieve_depth, midB1, midB2)
 					adapter.debug(
-						"Chance of finding a factor is an estimated {0:%} ({1:.3%} + {2:.3%}) or a difference of {3:%} ({4:.3%} + {5:.3%})".format(
-							p1 + p2, p1, p2, p1 + p2 - (prob1 + prob2), p1 - prob1, p2 - prob2
-						)
+						"Chance of finding a factor is an estimated %s (%s + %s) or a difference of %s (%s + %s)",
+						format(p1 + p2, "%"),
+						format(p1, ".3%"),
+						format(p2, ".3%"),
+						format(p1 + p2 - (prob1 + prob2), "%"),
+						format(p1 - prob1, ".3%"),
+						format(p2 - prob2, ".3%"),
 					)
 					if bound2 < midB2 * options.pm1_multiplier:
-						adapter.info("Existing B2={0:n} < {1:n}, redoing P-1".format(bound2, midB2 * options.pm1_multiplier))
+						adapter.info("Existing B2=%s < %s, redoing P-1", bound2, midB2 * options.pm1_multiplier)
 						redo = True
 		else:
 			redo = True
@@ -5806,16 +5835,21 @@ def update_assignment(adapter, cpu_num, assignment, task):
 			add_bounds = True
 		if add_bounds:
 			B1, B2 = walk(assignment.n, assignment.sieve_depth)[bounds.index(options.pm1_bounds)]
-			adapter.info("Adding {0} optimal P-1 bounds B1={1:n}, B2={2:n} to assignment".format(options.pm1_bounds, B1, B2))
+			adapter.info("Adding %s optimal P-1 bounds B1=%s, B2=%s to assignment", options.pm1_bounds, B1, B2)
 			p1, p2 = pm1(assignment.n, assignment.sieve_depth, B1, B2)
-			adapter.debug("Chance of finding a factor is an estimated {0:%} ({1:.3%} + {2:.3%})".format(p1 + p2, p1, p2))
+			adapter.debug(
+				"Chance of finding a factor is an estimated %s (%s + %s)",
+				format(p1 + p2, "%"),
+				format(p1, ".3%"),
+				format(p2, ".3%"),
+			)
 			assignment.B1 = B1
 			assignment.B2 = B2
 			changed = True
 	if changed:
-		adapter.debug("Original assignment: {0!r}".format(task))
+		adapter.debug("Original assignment: %r", task)
 		task = output_assignment(assignment)
-	adapter.debug("New assignment: {0!r}".format(task))
+	adapter.debug("New assignment: %r", task)
 	return assignment, task
 
 
@@ -5862,7 +5896,7 @@ def register_assignment(adapter, cpu_num, assignment, retry_count=0):
 			args["B2"] = assignment.B2
 	# elif assignment.work_type == PRIMENET.WORK_TYPE_CERT:
 	retry = False
-	adapter.info("Registering assignment: {0}".format(exponent_to_text(assignment)))
+	adapter.info("Registering assignment: %s", exponent_to_text(assignment))
 	result = send_request(guid, args)
 	if result is None:
 		retry = True
@@ -5870,7 +5904,7 @@ def register_assignment(adapter, cpu_num, assignment, retry_count=0):
 		rc = int(result["pnErrorResult"])
 		if rc == PRIMENET.ERROR_OK:
 			assignment.uid = result["k"]
-			adapter.info("Assignment registered as: {0}".format(assignment.uid))
+			adapter.info("Assignment registered as: %s", assignment.uid)
 			return assignment
 		if rc == PRIMENET.ERROR_NO_ASSIGNMENT:
 			pass
@@ -6118,9 +6152,10 @@ def tf1g_fetch(adapter, adir, cpu_num, max_assignments=None, max_ghd=None, recov
 	else:
 		stages = get_stages_mfaktx_ini(adapter, adir)
 		adapter.info(
-			"Getting {0:n}{1} TF1G assignments from mersenne.ca, stages = {2}".format(
-				max_ghd or max_assignments, " GHz-days of" if max_ghd else "", stages
-			)
+			"Getting %s%s TF1G assignments from mersenne.ca, stages = %s",
+			format(max_ghd or max_assignments, "n"),
+			" GHz-days of" if max_ghd else "",
+			stages,
 		)
 		data.update({
 			"min_exponent": options.min_exp,
@@ -6143,19 +6178,19 @@ def tf1g_fetch(adapter, adir, cpu_num, max_assignments=None, max_ghd=None, recov
 			if task:
 				test = parse_assignment(task)
 				if test is None:
-					adapter.error("Invalid assignment {0!r}".format(task))
+					adapter.error("Invalid assignment %r", task)
 					tests.append(task)
 				else:
-					adapter.info("Got assignment: {0}".format(exponent_to_text(test)))
+					adapter.info("Got assignment: %r", exponent_to_text(test))
 					tests.append(test)
 	except RequestException as e:
-		logging.exception(e, exc_info=options.debug)
+		logging.exception("%s", e, exc_info=options.debug)
 		retry = True
 	else:
 		if recover or recover_all:
-			adapter.debug("Recovered {0:n} TF1G assignment{1} from mersenne.ca".format(len(tests), "s" if len(tests) != 1 else ""))
+			adapter.debug("Recovered %s TF1G assignment%s from mersenne.ca", len(tests), "s" if len(tests) != 1 else "")
 		else:
-			adapter.debug("Fetched {0:n} TF1G assignment{1} from mersenne.ca".format(len(tests), "s" if len(tests) != 1 else ""))
+			adapter.debug("Fetched %s TF1G assignment%s from mersenne.ca", len(tests), "s" if len(tests) != 1 else "")
 		return tests
 	if retry:
 		if retry_count >= 2:
@@ -6183,7 +6218,7 @@ def recover_assignments(dirs, recover_all=False):
 			if num_to_get is None:
 				adapter.error("Unable to determine the number of assignments to recover")
 				return
-			adapter.info("Recovering {0:n} PrimeNet assignment{1}".format(num_to_get, "s" if num_to_get != 1 else ""))
+			adapter.info("Recovering %s PrimeNet assignment%s", num_to_get, "s" if num_to_get != 1 else "")
 			tests = []
 			for j in range(1, num_to_get + 1):
 				test = get_assignment(adapter, cpu_num, j, recover_all=recover_all)
@@ -6201,7 +6236,7 @@ def recover_assignments(dirs, recover_all=False):
 					tests.append(test)
 
 			if len(tests) > 1:
-				adapter.info("Recovered {0:n} assignment{1}".format(len(tests), "s" if len(tests) != 1 else ""))
+				adapter.info("Recovered %s assignment%s", len(tests), "s" if len(tests) != 1 else "")
 			write_workfile(adir, tests)
 
 	# As of early 2018, here is the full list of assignment-type codes supported by the Primenet server; Mlucas
@@ -6265,7 +6300,7 @@ def send_progress(adapter, cpu_num, assignment, percent, stage, time_left, now, 
 	retry = False
 	delta = timedelta(seconds=time_left)
 	adapter.info(
-		"Sending expected completion date for {0}: {1!s:>12} ({2:%c})".format(exponent_to_str(assignment), delta, now + delta)
+		"Sending expected completion date for %s: %12s (%s)", exponent_to_str(assignment), delta, (now + delta).strftime("%c")
 	)
 	result = send_request(guid, args)
 	if result is None:
@@ -6306,10 +6341,11 @@ def update_progress(adapter, cpu_num, assignment, progress, msec_per_iter, p, no
 	iteration, _, stage, _pct_complete, fftlen, bits, s2 = progress
 	percent, time_left, msec_per_iter = compute_progress(assignment, iteration, msec_per_iter, p, bits, s2)
 	adapter.debug(
-		"{0} is {1:.4%} done ({2:n} / {3:n})".format(
-			assignment.n,
-			percent,
-			iteration,
+		"%s is %s done (%s / %s)",
+		assignment.n,
+		format(percent, ".4%"),
+		format(iteration, "n"),
+		format(
 			s2
 			or bits
 			or (
@@ -6321,7 +6357,8 @@ def update_progress(adapter, cpu_num, assignment, progress, msec_per_iter, p, no
 				if assignment.work_type == PRIMENET.WORK_TYPE_FACTOR
 				else assignment.n - 2
 			),
-		)
+			"n",
+		),
 	)
 	if stage is None and percent > 0:
 		if assignment.work_type in {PRIMENET.WORK_TYPE_FIRST_LL, PRIMENET.WORK_TYPE_DBLCHK}:
@@ -6341,7 +6378,7 @@ def update_progress(adapter, cpu_num, assignment, progress, msec_per_iter, p, no
 	else:
 		cur_time_left += time_left
 		delta = timedelta(seconds=time_left)
-		adapter.debug("Finish estimated in {0} (using {1:n} msec/iter estimation)".format(delta, msec_per_iter))
+		adapter.debug("Finish estimated in %s (using %g msec/iter estimation)", delta, msec_per_iter)
 	if checkin:
 		send_progress(adapter, cpu_num, assignment, percent, stage, cur_time_left, now, fftlen)
 	return percent, cur_time_left
@@ -6377,25 +6414,27 @@ def get_assignments(adapter, adir, cpu_num, progress, tasks):
 			)
 		else:
 			num_cache = 1
-		adapter.debug(
-			"The num_cache option was not set, defaulting to {0:n} assignment{1}".format(num_cache, "s" if num_cache != 1 else "")
-		)
+		adapter.debug("The num_cache option was not set, defaulting to %s assignment%s", num_cache, "s" if num_cache != 1 else "")
 	else:
 		num_cache += 1
 	num_existing = len(assignments)
 	if num_existing > num_cache:
 		adapter.debug(
-			"Number of existing assignments ({0:n}) in {1!r} is greater than num_cache ({2:n}), so num_cache increased to {0:n}".format(
-				num_existing, workfile, num_cache
-			)
+			"Number of existing assignments (%s) in %r is greater than num_cache (%s), so num_cache increased to %s",
+			num_existing,
+			workfile,
+			num_cache,
+			num_existing,
 		)
 		num_cache = num_existing
 	if cur_time_left is None:
 		cur_time_left = 0
 		adapter.debug(
-			"Unable to estimate time left for current assignment{0}, so only getting {1:n} for now, instead of {2:n} day{3} of work".format(
-				"s" if num_existing != 1 else "", num_cache, options.days_of_work, "s" if options.days_of_work != 1 else ""
-			)
+			"Unable to estimate time left for current assignment%s, so only getting %s for now, instead of %s day%s of work",
+			"s" if num_existing != 1 else "",
+			num_cache,
+			options.days_of_work,
+			"s" if options.days_of_work != 1 else "",
 		)
 
 	if config.has_option(SEC.PrimeNet, "MaxExponents"):
@@ -6412,41 +6451,42 @@ def get_assignments(adapter, adir, cpu_num, progress, tasks):
 			if time_left <= days_work:
 				num_cache += 1
 				adapter.debug(
-					"Time left ({0}) is less than the days of work option ({1}), so num_cache increased by one to {2:n}".format(
-						time_left, days_work, num_cache
-					)
+					"Time left (%s) is less than the days of work option (%s), so num_cache increased by one to %s",
+					time_left,
+					days_work,
+					num_cache,
 				)
 			else:
 				adapter.debug(
-					"Time left ({0}) is greater than the days of work option ({1}), so num_cache has not been changed".format(
-						time_left, days_work
-					)
+					"Time left (%s) is greater than the days of work option (%s), so num_cache has not been changed",
+					time_left,
+					days_work,
 				)
 
 		if amax < num_cache:
 			adapter.info(
-				"num_cache ({0:n}) is greater than config option MaxExponents ({1:n}), so num_cache decreased to {1:n}".format(
-					num_cache, amax
-				)
+				"num_cache (%s) is greater than config option MaxExponents (%s), so num_cache decreased to %s",
+				num_cache,
+				amax,
+				amax,
 			)
 			num_cache = amax
 
 		if num_cache <= num_existing:
-			adapter.debug(
-				"{0:n} ≥ {1:n} assignments already in {2!r}, not getting new work".format(num_existing, num_cache, workfile)
-			)
+			adapter.debug("%s ≥ %s assignments already in %r, not getting new work", num_existing, num_cache, workfile)
 			if cur_time_left and options.min_exp and options.min_exp >= MAX_PRIMENET_EXP:
-				adapter.info(
-					"Estimated time to complete queued work is {0}, days of work requested is {1}".format(time_left, days_work)
-				)
+				adapter.info("Estimated time to complete queued work is %s, days of work requested is %s", time_left, days_work)
 			if not new_tasks:
 				return
 			break
 		num_to_get = num_cache - num_existing
 		adapter.debug(
-			"Found {0:n} < {1:n} assignments in {2!r}, getting {3:n} new assignment{4}".format(
-				num_existing, num_cache, workfile, num_to_get, "s" if num_to_get != 1 else ""
-			)
+			"Found %s < %s assignments in %r, getting %s new assignment%s",
+			num_existing,
+			num_cache,
+			workfile,
+			num_to_get,
+			"s" if num_to_get != 1 else "",
 		)
 
 		if (
@@ -6485,14 +6525,12 @@ def get_assignments(adapter, adir, cpu_num, progress, tasks):
 		num_existing += num_fetched
 
 	if len(new_tasks) > 1:
-		adapter.info("Fetched {0:n} assignment{1}".format(len(new_tasks), "s" if len(new_tasks) != 1 else ""))
+		adapter.info("Fetched %s assignment%s", len(new_tasks), "s" if len(new_tasks) != 1 else "")
 	if len(tasks) <= 5:
 		output_status((adir,), cpu_num)
 	if num_fetched < num_to_get:
 		adapter.error(
-			"Failed to get requested number of new assignments, {0:n} requested, {1:n} successfully retrieved".format(
-				num_to_get, num_fetched
-			)
+			"Failed to get requested number of new assignments, %s requested, %s successfully retrieved", num_to_get, num_fetched
 		)
 		send_msg(
 			"❌📥 Failed to get new assignments on {0}".format(options.computer_id),
@@ -6550,9 +6588,9 @@ def update_progress_all(adapter, adir, cpu_num, last_time, tasks, checkin=True):
 		date = datetime.fromtimestamp(mtime)
 		if last_time >= mtime:
 			adapter.warning(
-				"STALL DETECTED: Log/Save file {0!r} has not been modified since the last progress update ({1:%c})".format(
-					file, date
-				)
+				"STALL DETECTED: Log/Save file %r has not been modified since the last progress update (%s)",
+				file,
+				date.strftime("%c"),
 			)
 			if not config.has_option(section, "stalled"):
 				logfile = (
@@ -7055,9 +7093,7 @@ if COLOR:
 
 if not opts_no_defaults.__dict__ and not os.path.exists(os.path.join(workdir, options.localfile)):
 	logging.info(
-		"No command line arguments provided or {0!r} file found, now running --setup to configure the program.".format(
-			options.localfile
-		)
+		"No command line arguments provided or %r file found, now running --setup to configure the program.", options.localfile
 	)
 	options.setup = True
 
@@ -7071,7 +7107,7 @@ file_handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=maxBytes, 
 file_handler.setFormatter(Formatter("[%(threadName)s%(worker)s %(asctime)s]  %(levelname)s: %(message)s"))
 logger.addHandler(file_handler)
 
-logging.info("AutoPrimeNet assignment handler version {0}, Python {1}".format(VERSION, platform.python_version()))
+logging.info("AutoPrimeNet assignment handler version %s, Python %s", VERSION, platform.python_version())
 
 if not hasattr(opts_no_defaults, "work_preference"):
 	for i in range(options.num_workers):
@@ -7104,24 +7140,24 @@ if options.user_id is not None:
 		parser.error("User ID must be less than or equal to 20 characters")
 	res = RE.search(options.user_id)
 	if res:
-		logging.warning("User ID has invalid character: {0!r}".format(res.group()))
+		logging.warning("User ID has invalid character: %r", res.group())
 if options.computer_id is not None:
 	if len(options.computer_id) > 20:
 		parser.error("Computer name must be less than or equal to 20 characters")
 	res = RE.search(options.computer_id)
 	if res:
-		logging.warning("Computer name has invalid character: {0!r}".format(res.group()))
+		logging.warning("Computer name has invalid character: %r", res.group())
 if not 8 <= len(options.cpu_brand) <= 64:
 	parser.error("CPU model must be between 8 and 64 characters")
 res = RE.search(options.cpu_brand)
 if res:
-	logging.warning("CPU model has invalid character: {0!r}".format(res.group()))
+	logging.warning("CPU model has invalid character: %r", res.group())
 if options.cpu_features is not None:
 	if len(options.cpu_features) > 64:
 		parser.error("CPU features must be less than or equal to 64 characters")
 	res = RE.search(options.cpu_features)
 	if res:
-		logging.warning("CPU features has invalid character: {0!r}".format(res.group()))
+		logging.warning("CPU features has invalid character: %r", res.group())
 
 PROGRAM = PROGRAMS[5 if options.mfakto else 4 if options.mfaktc else 3 if options.cudalucas else 2 if options.gpuowl else 1]
 
@@ -7320,13 +7356,13 @@ if options.num_workers > 1:
 for i, awork_preference in enumerate(options.work_preference):
 	section = "Worker #{0}".format(i + 1) if options.num_workers > 1 else SEC.PrimeNet
 	if not config.has_option(section, "WorkPreference") or config.get(section, "WorkPreference") != awork_preference:
-		logging.debug("update {0!r} with WorkPreference={1}".format(options.localfile, awork_preference))
+		logging.debug("update %r with WorkPreference=%s", options.localfile, awork_preference)
 		config.set(section, "WorkPreference", awork_preference)
 		config_updated = True
 
 # write back prime.ini if necessary
 if config_updated:
-	logging.debug("write {0!r}".format(options.localfile))
+	logging.debug("write %r", options.localfile)
 	config_write(config)
 
 if options.setup:
@@ -7412,7 +7448,7 @@ if options.ping:
 	if result is None:
 		logging.error("Failure pinging server")
 		sys.exit(1)
-	logging.info("\n" + result)
+	logging.info("\n%s", result)
 	sys.exit(0)
 
 if options.test_email:
@@ -7431,9 +7467,7 @@ if guid is None:
 elif config_updated:
 	register_instance(guid)
 
-logging.info(
-	"Monitoring director{0}: {1}".format("y" if len(dirs) == 1 else "ies", ", ".join(map(repr, map(os.path.abspath, dirs))))
-)
+logging.info("Monitoring director%s: %s", "y" if len(dirs) == 1 else "ies", ", ".join(map(repr, map(os.path.abspath, dirs))))
 
 while True:
 	start = timeit.default_timer()
@@ -7509,16 +7543,13 @@ while True:
 	elapsed = timeit.default_timer() - start
 	if options.timeout > elapsed:
 		logging.info(
-			"Will report results{0} and upload proof files every {1:.01f} hour{2}, and report progress every {3} hour{4}. Next check at: {5:%c}".format(
-				""
-				if config.has_option(SEC.PrimeNet, "QuitGIMPS") and config.getboolean(SEC.PrimeNet, "QuitGIMPS")
-				else ", get work",
-				options.timeout / (60 * 60),
-				"s" if options.timeout != 60 * 60 else "",
-				options.hours_between_checkins,
-				"s" if options.hours_between_checkins != 1 else "",
-				datetime.fromtimestamp(current_time) + timedelta(seconds=options.timeout),
-			)
+			"Will report results%s and upload proof files every %.01f hour%s, and report progress every %s hour%s. Next check at: %s",
+			"" if config.has_option(SEC.PrimeNet, "QuitGIMPS") and config.getboolean(SEC.PrimeNet, "QuitGIMPS") else ", get work",
+			options.timeout / (60 * 60),
+			"s" if options.timeout != 60 * 60 else "",
+			options.hours_between_checkins,
+			"s" if options.hours_between_checkins != 1 else "",
+			(datetime.fromtimestamp(current_time) + timedelta(seconds=options.timeout)).strftime("%c"),
 		)
 		try:
 			time.sleep(options.timeout - elapsed)
