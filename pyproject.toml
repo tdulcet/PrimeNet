@@ -30,7 +30,7 @@ select = [
 	"EXE",
 	"ISC",
 	"ICN",
-	# "G",
+	"G",
 	"PIE",
 	"PYI",
 	"Q",
