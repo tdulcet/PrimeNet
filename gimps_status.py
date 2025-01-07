@@ -77,8 +77,7 @@ else:
 	# Only supports ASCII characters on Windows
 	# Would need the wcwidth library to support Unicode characters
 	# from wcwidth import wcswidth
-	def wcswidth(astr):
-		return len(astr)
+	wcswidth = len
 
 
 try:
@@ -518,10 +517,10 @@ def strcol(astr):
 
 def output_table(rows):
 	"""Formats and prints a table from a list of rows with aligned columns."""
-	amax = max(len(row) for row in rows)
+	amax = max(map(len, rows))
 	for row in rows:
 		row.extend("" for _ in range(amax - len(row)))
-	lens = [max(strcol(v) for v in col) for col in zip(*rows)]
+	lens = [max(map(strcol, col)) for col in zip(*rows)]
 	print(
 		"\n".join(
 			"  ".join("{{{0}:<{1}}}".format(i, alen - (strcol(v) - len(v))) for i, (alen, v) in enumerate(zip(lens, row))).format(
@@ -559,7 +558,7 @@ def outputunit(number, ascale=scale.IEC_I):
 		strm = "{0:.0f}".format(number)
 
 	# "k" if power == 1 and ascale == scale.SI else
-	strm += suffix_power_char[power] if power < len(suffix_power_char) else "(error)"
+	strm += " " + (suffix_power_char[power] if power < len(suffix_power_char) else "(error)")
 
 	if ascale == scale.IEC_I and power > 0:
 		strm += "i"
@@ -1551,7 +1550,7 @@ def parse_work_unit_gpuowl(filename):
 
 	try:
 		with open(filename, "rb") as f:
-			header = f.readline().rstrip()
+			header = f.readline().rstrip(b"\n")
 
 			if not header.startswith(b"OWL "):
 				return None
@@ -1862,7 +1861,7 @@ def parse_work_unit_mfaktc(filename):
 
 	try:
 		with open(filename, "rb") as f:
-			header = f.readline()
+			header = f.readline().rstrip(b"\n")
 
 			if options.check and f.read():
 				return None
@@ -1911,7 +1910,7 @@ def parse_work_unit_mfakto(filename):
 
 	try:
 		with open(filename, "rb") as f:
-			header = f.readline().rstrip()
+			header = f.readline().rstrip(b"\n")
 
 			if options.check and f.read():
 				return None
@@ -1953,11 +1952,11 @@ def parse_proof(filename):
 
 	try:
 		with open(filename, "rb") as f:
-			header = f.readline().rstrip()
+			header = f.readline().rstrip(b"\n")
 			if header != b"PRP PROOF":
 				return None
 
-			header, _, version = f.readline().rstrip().partition(b"=")
+			header, _, version = f.readline().rstrip(b"\n").partition(b"=")
 			if header != b"VERSION":
 				logging.error("Error getting version number from proof header")
 				return None
@@ -1966,12 +1965,12 @@ def parse_proof(filename):
 				logging.error("PRP proof file with unknown version = %s", version)
 				return None
 
-			header, _, _hashlen = f.readline().rstrip().partition(b"=")
+			header, _, _hashlen = f.readline().rstrip(b"\n").partition(b"=")
 			if header != b"HASHSIZE":
 				logging.error("Error getting hash size from proof header")
 				return None
 
-			header, _, power = f.readline().rstrip().partition(b"=")
+			header, _, power = f.readline().rstrip(b"\n").partition(b"=")
 			power, _, power_mult = power.partition(b"x")
 			if header != b"POWER":
 				logging.error("Error getting power from proof header")
@@ -1979,11 +1978,11 @@ def parse_proof(filename):
 			wu.proof_power = int(power)
 			wu.proof_power_mult = int(power_mult) if power_mult else 1
 
-			header = f.readline().rstrip()
+			header = f.readline().rstrip(b"\n")
 			if header.startswith(b"BASE="):
 				_header, _, base = header.partition(b"=")
 				wu.prp_base = int(base)
-				header = f.readline().rstrip()
+				header = f.readline().rstrip(b"\n")
 			else:
 				wu.prp_base = 3
 
@@ -2321,9 +2320,10 @@ def main(dirs):
 				match = PRIME95_RE.match(filename)
 				if match:
 					root, _ = os.path.splitext(filename)
-					if root not in entries:
-						entries[root] = []
-					entries[root].append((int(match.group(2)) if match.group(2) else 1 if match.group(1) else 0, entry))
+					entries.setdefault(root, []).append((
+						int(match.group(2)) if match.group(2) else 1 if match.group(1) else 0,
+						entry,
+					))
 			for entry in entries.values():
 				for j, (num, file) in enumerate(sorted(entry)):
 					result = parse_work_unit_prime95(file)
@@ -2339,10 +2339,8 @@ def main(dirs):
 				match = MLUCAS_RE.match(os.path.basename(entry))
 				if match:
 					exponent = int(match.group(2))
-					if exponent not in entries:
-						entries[exponent] = []
 					stage = match.group(3) and int(match.group(3))
-					entries[exponent].append((
+					entries.setdefault(exponent, []).append((
 						1 if stage is None else stage,
 						-1 if match.group(4) else 0 if stage or match.group(1) in {"p", "f"} else 1,
 						entry,
@@ -2362,9 +2360,7 @@ def main(dirs):
 				match = CUDALUCAS_RE.match(os.path.basename(entry))
 				if match:
 					exponent = int(match.group(2))
-					if exponent not in entries:
-						entries[exponent] = []
-					entries[exponent].append((0 if match.group(1) == "c" else 1, entry))
+					entries.setdefault(exponent, []).append((0 if match.group(1) == "c" else 1, entry))
 			for exponent, entry in entries.items():
 				for j, (num, file) in enumerate(sorted(entry)):
 					result = parse_work_unit_cudalucas(file, exponent)
@@ -2380,9 +2376,7 @@ def main(dirs):
 				match = CUDAPM1_RE.match(os.path.basename(entry))
 				if match:
 					exponent = int(match.group(2))
-					if exponent not in entries:
-						entries[exponent] = []
-					entries[exponent].append((int(match.group(3)), 0 if match.group(1) == "c" else 1, entry))
+					entries.setdefault(exponent, []).append((int(match.group(3)), 0 if match.group(1) == "c" else 1, entry))
 			for exponent, entry in entries.items():
 				for j, (_stage, num, file) in enumerate(sorted(entry)):
 					result = parse_work_unit_cudapm1(file, exponent)
@@ -2407,9 +2401,7 @@ def main(dirs):
 				match = GPUOWL_RE.search(entry)
 				if match:
 					exponent = int(match.group(1))
-					if exponent not in entries:
-						entries[exponent] = []
-					entries[exponent].append((
+					entries.setdefault(exponent, []).append((
 						-1 if match.group(3) or match.group(4) else 1 if match.group(5) or match.group(6) or match.group(7) else 0,
 						entry,
 					))
@@ -2438,9 +2430,7 @@ def main(dirs):
 				match = MFAKTO_RE.match(os.path.basename(entry))
 				if match:
 					exponent = match.group(1)
-					if exponent not in entries:
-						entries[exponent] = []
-					entries[exponent].append((1 if match.group(2) else 0, entry))
+					entries.setdefault(exponent, []).append((1 if match.group(2) else 0, entry))
 			for entry in entries.values():
 				for j, (num, file) in enumerate(sorted(entry)):
 					result = parse_work_unit_mfakto(file)
