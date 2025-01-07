@@ -199,8 +199,10 @@ Options:
                         setting this flag to 1,000,000,000 or above.
   --max-exp=MAX_EXP     Maximum exponent to get from PrimeNet or TF1G (2 -
                         9,999,999,999)
-  --min-bit=MIN_BIT     Minimum bit level of TF1G assignments to fetch
-  --max-bit=MAX_BIT     Maximum bit level of TF1G assignments to fetch
+  --min-bit=MIN_BIT     Minimum bit level of TF assignments to get from
+                        PrimeNet or TF1G
+  --max-bit=MAX_BIT     Maximum bit level of TF assignments to get from
+                        PrimeNet or TF1G
   -m, --mlucas          Get assignments for Mlucas.
   -g, --gpuowl          Get assignments for GpuOwl.
   --prpll               Get assignments for PRPLL. PRPLL is not PrimeNet

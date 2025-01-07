@@ -519,7 +519,7 @@ if hasattr(sys, "set_int_max_str_digits"):
 	sys.set_int_max_str_digits(0)
 charset.add_charset("utf-8", charset.QP, charset.QP, "utf-8")
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 # GIMPS programs to use in the application version string when registering with PrimeNet
 PROGRAMS = (
 	{"name": "Prime95", "version": "30.19", "build": 20},
@@ -566,7 +566,9 @@ elif sys.platform.startswith("linux"):
 	PORT = 8 if is_64bit else 2
 
 session = requests.Session()  # session that maintains our cookies
-session.headers["User-Agent"] = "AutoPrimeNet assignment handler version {0} ({1})".format(VERSION, session.headers["User-Agent"])
+session.headers["User-Agent"] = "AutoPrimeNet assignment handler version {0} ({1} {2}/{3})".format(
+	VERSION, session.headers["User-Agent"], platform.python_implementation(), platform.python_version()
+)
 # urllib3 1.26+: allowed_methods=None, method_whitelist=None
 session.mount("https://", requests.adapters.HTTPAdapter(max_retries=urllib3.util.Retry(3, backoff_factor=1)))
 session.mount("http://", requests.adapters.HTTPAdapter(max_retries=urllib3.util.Retry(3, backoff_factor=1)))
@@ -939,7 +941,7 @@ def outputunit(number, scale=False):
 		strm = "{0:.0f}".format(number)
 
 	# "k" if power == 1 and scale else
-	strm += suffix_power_char[power] if power < len(suffix_power_char) else "(error)"
+	strm += " " + (suffix_power_char[power] if power < len(suffix_power_char) else "(error)")
 
 	if not scale and power > 0:
 		strm += "i"
@@ -2601,6 +2603,7 @@ def send_request(guid, args):
 		else:
 			secure_v5_url(guid, args)
 	# logging.debug("Args: %s", args)
+
 	try:
 		r = session.get(primenet_v5_burl, params=args, timeout=180)
 		# logging.debug("URL: " + r.url)
@@ -2610,10 +2613,10 @@ def send_request(guid, args):
 		logging.exception("%s", e, exc_info=options.debug)
 		return None
 	except HTTPError as e:
-		logging.exception("ERROR receiving answer to request: %s", e, exc_info=options.debug)
+		logging.exception("Error receiving answer to request: %s", e, exc_info=options.debug)
 		return None
 	except ConnectionError as e:
-		logging.exception("ERROR connecting to server for request: %s", e, exc_info=options.debug)
+		logging.exception("Error connecting to server for request: %s", e, exc_info=options.debug)
 		return None
 
 	result = parse_v5_resp(text)
@@ -4507,9 +4510,16 @@ def program_options(send=False, start=-1, retry_count=0):
 				return program_options(send, tnum, retry_count + 1)
 			if "w" in result:
 				w = int(result["w"])
-				aw = next(key for key, value in CONVERT_DICT.items() if value == w) if w in CONVERT_DICT.values() else w
+				awork_preference = int(options.work_preference[max(0, tnum)])
+				aw = (
+					next(key for key, value in CONVERT_DICT.items() if value == w)
+					if awork_preference in CONVERT_DICT and w in CONVERT_DICT.values()
+					else w
+				)
+				if awork_preference != aw:
+					logging.warning("Work preference changed to %s", aw)
 				if aw not in SUPPORTED:
-					logging.error("Unsupported worktype = %s for %s", aw, PROGRAM["name"])
+					logging.critical("Unsupported work preference = %s for %s", aw, PROGRAM["name"])
 					sys.exit(1)
 				if tnum < 0:
 					for i in range(options.num_workers):
@@ -4795,6 +4805,10 @@ def get_assignment(
 			args["min"] = min_exp
 		if max_exp:
 			args["max"] = max_exp
+		if options.min_bit:
+			args["sf"] = options.min_bit
+		if options.max_bit:
+			args["ef"] = options.max_bit
 	elif recover_all:
 		args["all"] = 1
 	# adapter.debug("Fetching using v5 API")
@@ -4922,7 +4936,7 @@ def get_assignment(
 		assignment.c = int(r["c"])
 		assignment.cert_squarings = int(r["ns"])
 	else:
-		adapter.error("Received unknown worktype: %s.", assignment.work_type)
+		adapter.critical("Received unknown worktype: %s.", assignment.work_type)
 		sys.exit(1)
 	adapter.info("Got assignment %s: %s", assignment.uid, exponent_to_text(assignment))
 	return assignment
@@ -5287,7 +5301,7 @@ def parse_result(adapter, adir, resultsfile, sendline):
 	user = ar.setdefault("user", options.user_id)
 	computer = ar.setdefault("computer", options.computer_id)
 	ar["script"] = SCRIPT
-	message = json.dumps(ar, ensure_ascii=False)
+	message = json.dumps(ar, ensure_ascii=False, separators=(",", ":"))
 
 	assignment = Assignment()
 	assignment.uid = ar.get("aid", 0)
@@ -6378,7 +6392,7 @@ def update_progress(adapter, cpu_num, assignment, progress, msec_per_iter, p, no
 	else:
 		cur_time_left += time_left
 		delta = timedelta(seconds=time_left)
-		adapter.debug("Finish estimated in %s (using %g msec/iter estimation)", delta, msec_per_iter)
+		adapter.debug("Finish estimated in %s (using %g ms/iter estimation)", delta, msec_per_iter)
 	if checkin:
 		send_progress(adapter, cpu_num, assignment, percent, stage, cur_time_left, now, fftlen)
 	return percent, cur_time_left
@@ -6783,8 +6797,8 @@ parser.add_option(
 )
 parser.add_option("--max-exp", dest="max_exp", type="int", help="Maximum exponent to get from PrimeNet or TF1G (2 - 9,999,999,999)")
 
-parser.add_option("--min-bit", dest="min_bit", type="int", help="Minimum bit level of TF1G assignments to fetch")
-parser.add_option("--max-bit", dest="max_bit", type="int", help="Maximum bit level of TF1G assignments to fetch")
+parser.add_option("--min-bit", dest="min_bit", type="int", help="Minimum bit level of TF assignments to get from PrimeNet or TF1G")
+parser.add_option("--max-bit", dest="max_bit", type="int", help="Maximum bit level of TF assignments to get from PrimeNet or TF1G")
 
 parser.add_option("-m", "--mlucas", action="store_true", help="Get assignments for Mlucas.")
 parser.add_option("-g", "--gpuowl", action="store_true", help="Get assignments for GpuOwl.")
@@ -7356,7 +7370,7 @@ if options.num_workers > 1:
 for i, awork_preference in enumerate(options.work_preference):
 	section = "Worker #{0}".format(i + 1) if options.num_workers > 1 else SEC.PrimeNet
 	if not config.has_option(section, "WorkPreference") or config.get(section, "WorkPreference") != awork_preference:
-		logging.debug("update %r with WorkPreference=%s", options.localfile, awork_preference)
+		logging.debug("update %r section %r with WorkPreference=%s", options.localfile, section, awork_preference)
 		config.set(section, "WorkPreference", awork_preference)
 		config_updated = True
 
